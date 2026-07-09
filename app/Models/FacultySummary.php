@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class FacultySummary extends Model
+{
+    protected $fillable = [
+        'unitid',
+        'institution',
+        'sector',
+        'carnegie_classification',
+        'medical_degree_flag',
+        'hospital_flag',
+        'year',
+        'total_faculty',
+        'tenured_total',
+        't_track_total',
+        'non_tenure_total',
+        'assistant_professor_total',
+        'associate_professor_total',
+        'professor_total',
+        'non_tenure_assistant_professor',
+        'non_tenure_associate_professor',
+        'non_tenure_professor',
+        't_track_assistant_professor',
+        't_track_associate_professor',
+        't_track_professor',
+        'tenured_assistant_professor',
+        'tenured_associate_professor',
+        'tenured_professor',
+        'tenure_system_total',
+        'senior_faculty_total',
+        'check_tenure_total',
+        'check_rank_total',
+        'tenure_total_diff',
+        'rank_total_diff',
+        'pct_tenured',
+        'pct_t_track',
+        'pct_non_tenure',
+        'pct_professor',
+        'pct_associate_professor',
+        'pct_assistant_professor',
+        'pct_tenured_professor',
+        'pct_tenured_associate_professor',
+        'pct_tenured_assistant_professor',
+        'pct_t_track_professor',
+        'pct_t_track_associate_professor',
+        'pct_t_track_assistant_professor',
+        'pct_non_tenure_professor',
+        'pct_non_tenure_associate_professor',
+        'pct_non_tenure_assistant_professor',
+        'pct_tenure_system',
+        'non_tenure_to_tenure_system_ratio',
+        'pct_senior_faculty',
+        'assistant_to_senior_ratio',
+        'pct_tenure_sum',
+        'pct_rank_sum',
+    ];
+}

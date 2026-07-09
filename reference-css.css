@@ -1,0 +1,1079 @@
+/* ==========================================================================
+   Institution Rankings â€” Custom Design System
+   UConn navy + blue palette Â· Rethink Sans Â· Bootstrap 5.3 dark mode
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Design Tokens (CSS Custom Properties)
+   -------------------------------------------------------------------------- */
+
+:root {
+    /* Brand palette */
+    --brand-navy:          #000E2F;
+    --brand-navy-light:    #1a2947;
+    --brand-navy-rgb:      0, 14, 47;
+
+    --brand-accent:        #2563EB;
+    --brand-accent-hover:  #1D4ED8;
+    --brand-accent-light:  #BFDBFE;
+    --brand-accent-subtle: rgba(37, 99, 235, 0.10);
+    --brand-accent-rgb:    37, 99, 235;
+
+    /* Surfaces */
+    --surface-primary:     #ffffff;
+    --surface-secondary:   #f8f9fa;
+    --surface-card:        #ffffff;
+    --surface-sidebar:     #f1f3f5;
+    --surface-code:        #f1f3f5;
+
+    /* Text */
+    --text-primary:        #0f172a;
+    --text-secondary:      #475569;
+    --text-muted:          #94a3b8;
+    --text-on-brand:       #ffffff;
+
+    /* Borders */
+    --border-default:      #e2e8f0;
+    --border-subtle:       #f1f5f9;
+
+    /* Shadows */
+    --shadow-sm:           0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md:           0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg:           0 8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-accent:       0 4px 14px rgba(37, 99, 235, 0.25);
+
+    /* Table row colors */
+    --row-blue-light:      #E8F0FE;
+    --row-blue-dark:       #D0E3FF;
+
+    /* Badge colors */
+    --badge-red:           #DC2626;
+    --badge-orange:        #EA580C;
+    --badge-gold:          #F59E0B;
+
+    /* Filter button colors */
+    --filter-active:       #4F46E5;  /* Indigo/purple for active state */
+    --filter-inactive:     #ECEFFF;  /* Very light blue for inactive state */
+    --filter-inactive-hover: #D4D9F5;
+    --filter-inactive-text: #000E2F;  /* Dark text for light background */
+
+    /* Table header */
+    --thead-bg:            #1a2f5f;
+    --thead-text:          #ffffff;
+
+    /* Radii */
+    --radius-sm:           0.375rem;
+    --radius-md:           0.5rem;
+    --radius-lg:           0.75rem;
+    --radius-xl:           1rem;
+
+    /* Transitions */
+    --transition-fast:     150ms ease;
+    --transition-base:     250ms ease;
+    --transition-slow:     400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark mode overrides */
+[data-bs-theme="dark"] {
+    --brand-accent:        #60A5FA;
+    --brand-accent-hover:  #3B82F6;
+    --brand-accent-light:  #1E3A5F;
+    --brand-accent-subtle: rgba(96, 165, 250, 0.15);
+    --brand-accent-rgb:    96, 165, 250;
+
+    --surface-primary:     #0f172a;
+    --surface-secondary:   #1e293b;
+    --surface-card:        #1e293b;
+    --surface-sidebar:     #1e293b;
+    --surface-code:        #334155;
+
+    --text-primary:        #f1f5f9;
+    --text-secondary:      #cbd5e1;
+    --text-muted:          #64748b;
+    --text-on-brand:       #ffffff;
+
+    --border-default:      #334155;
+    --border-subtle:       #1e293b;
+
+    --shadow-sm:           0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md:           0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg:           0 8px 24px rgba(0, 0, 0, 0.4);
+    --shadow-accent:       0 4px 14px rgba(96, 165, 250, 0.2);
+
+    /* Dark mode table rows - darker blues with better contrast */
+    --row-blue-light:      #1e3a5f;
+    --row-blue-dark:       #15304d;
+
+    /* Dark mode filter buttons */
+    --filter-active:       #6366F1;
+    --filter-inactive:     #1e293b;
+    --filter-inactive-hover: #334155;
+    --filter-inactive-text: #e2e8f0;
+
+    /* Dark mode table header */
+    --thead-bg:            #0f1f3d;
+    --thead-text:          #f1f5f9;
+}
+
+
+/* --------------------------------------------------------------------------
+   2. Typography
+   -------------------------------------------------------------------------- */
+
+body {
+    font-family: 'Rethink Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-primary);
+    background-color: var(--surface-primary);
+    letter-spacing: -0.01em;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: 'Rethink Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.text-brand {
+    color: var(--brand-navy) !important;
+}
+
+[data-bs-theme="dark"] .text-brand {
+    color: var(--brand-accent) !important;
+}
+
+.text-accent {
+    color: var(--brand-accent) !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   3. Navbar
+   -------------------------------------------------------------------------- */
+
+.navbar-brand-custom {
+    background-color: #0F2D5E;
+    border-bottom: 3px solid var(--brand-accent);
+    transition: border-color var(--transition-base);
+}
+
+[data-bs-theme="dark"] .navbar-brand-custom {
+    background-color: #162544;
+    border-bottom-color: var(--brand-accent);
+}
+
+.navbar-brand-custom .navbar-brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.03em;
+    color: var(--text-on-brand) !important;
+}
+
+.navbar-brand-custom .nav-link {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.75) !important;
+    transition: color var(--transition-fast);
+    position: relative;
+}
+
+.navbar-brand-custom .nav-link:hover,
+.navbar-brand-custom .nav-link.active {
+    color: #ffffff !important;
+}
+
+.navbar-brand-custom .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0.5rem;
+    right: 0.5rem;
+    height: 2px;
+    background: var(--brand-accent);
+    border-radius: 1px;
+}
+
+/* Theme toggle */
+.theme-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: inherit;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--brand-accent);
+}
+
+
+/* --------------------------------------------------------------------------
+   4. Cards
+   -------------------------------------------------------------------------- */
+
+.card {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    background-color: var(--surface-card);
+    transition: box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.card-header-brand {
+    background-color: var(--brand-navy);
+    color: var(--text-on-brand);
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: -0.01em;
+    border-bottom: 2px solid var(--brand-accent);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+}
+
+[data-bs-theme="dark"] .card-header-brand {
+    background-color: var(--surface-secondary);
+    border-bottom-color: var(--brand-accent);
+}
+
+.card-sidebar {
+    background-color: var(--surface-sidebar);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+}
+
+
+/* --------------------------------------------------------------------------
+   5. Tables
+   -------------------------------------------------------------------------- */
+
+.table-custom {
+    --bs-table-bg: transparent;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.table-custom thead th {
+    background-color: var(--thead-bg);
+    color: var(--thead-text);
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: none;
+    padding: 0.75rem 1rem;
+    white-space: nowrap;
+}
+
+.table-custom tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+}
+
+.table-custom tbody tr {
+    transition: background-color var(--transition-fast);
+}
+
+.table-custom tbody tr:hover {
+    background-color: var(--brand-accent-subtle);
+}
+
+/* Alternating row colors */
+.rankings-table tbody tr:nth-child(odd) {
+    background-color: var(--row-blue-light);
+}
+
+.rankings-table tbody tr:nth-child(even) {
+    background-color: var(--row-blue-dark);
+}
+
+.rankings-table tbody tr:hover {
+    background-color: rgba(var(--brand-accent-rgb), 0.2) !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   6. Rankings Table Specifics
+   -------------------------------------------------------------------------- */
+
+.rankings-table th:nth-child(1),
+.rankings-table td:nth-child(1) { width: 70px; text-align: center; }
+.rankings-table th:nth-child(2),
+.rankings-table td:nth-child(2) { width: 120px; text-align: left; }
+.rankings-table th:nth-child(3),
+.rankings-table td:nth-child(3) { min-width: 300px; }
+.rankings-table th:nth-child(4),
+.rankings-table td:nth-child(4) { width: 110px; text-align: center; }
+
+.rank-number {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.rank-top .rank-number {
+    color: var(--brand-accent);
+}
+
+.score-value {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--brand-accent);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Top row highlights - simplified for new design */
+.rankings-table tbody tr.rank-gold,
+.rankings-table tbody tr.rank-silver,
+.rankings-table tbody tr.rank-bronze,
+.rankings-table tbody tr.rank-top5 {
+    /* Removed special highlighting to use alternating colors */
+}
+
+/* Factor chips */
+.factor-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background-color: var(--surface-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.factor-chip .factor-pct {
+    font-weight: 700;
+    color: var(--brand-accent);
+    font-size: 0.72rem;
+}
+
+/* Institution link */
+.institution-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color var(--transition-fast);
+}
+
+.institution-link:hover {
+    color: var(--brand-accent);
+}
+
+
+/* --------------------------------------------------------------------------
+   7. Sidebar & Range Sliders
+   -------------------------------------------------------------------------- */
+
+.sidebar-sticky {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-default) transparent;
+}
+
+.sidebar-section-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--brand-accent);
+}
+
+/* Custom range slider */
+.form-range::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, #22c55e 0%, #eab308 50%, #ef4444 100%);
+}
+
+.form-range::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--brand-accent);
+    border: 2px solid var(--surface-card);
+    box-shadow: var(--shadow-sm);
+    margin-top: -6px;
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-range::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: var(--shadow-accent);
+}
+
+.form-range::-webkit-slider-thumb:active {
+    transform: scale(1.05);
+}
+
+.form-range::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, #22c55e 0%, #eab308 50%, #ef4444 100%);
+    border: none;
+}
+
+.form-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--brand-accent);
+    border: 2px solid var(--surface-card);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+}
+
+/* Weight badge */
+.weight-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 1.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 999px;
+    background-color: var(--surface-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-default);
+    transition: all var(--transition-fast);
+    font-variant-numeric: tabular-nums;
+}
+
+.weight-badge.active {
+    background-color: var(--brand-accent);
+    color: #fff;
+    border-color: var(--brand-accent);
+    box-shadow: var(--shadow-accent);
+}
+
+/* Slider label */
+.slider-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.slider-label.emphasized {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Filter checkboxes */
+.filter-group-title {
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+}
+
+.form-check-input:checked {
+    background-color: var(--brand-accent);
+    border-color: var(--brand-accent);
+}
+
+
+/* --------------------------------------------------------------------------
+   8. Toggle Switches (for metrics admin)
+   -------------------------------------------------------------------------- */
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-switch .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: var(--border-default);
+    border-radius: 999px;
+    transition: background-color var(--transition-fast);
+}
+
+.toggle-switch .toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--brand-accent);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(18px);
+}
+
+
+/* --------------------------------------------------------------------------
+   9. Badges & Chips
+   -------------------------------------------------------------------------- */
+
+.badge-accent {
+    background-color: var(--brand-accent) !important;
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 0.75rem;
+}
+
+.badge-brand {
+    background-color: var(--brand-navy) !important;
+    color: var(--text-on-brand) !important;
+    font-weight: 600;
+}
+
+[data-bs-theme="dark"] .badge-brand {
+    background-color: var(--surface-code) !important;
+}
+
+.top-factor-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background-color: rgba(var(--brand-accent-rgb), 0.15);
+    color: var(--brand-accent-hover);
+    border: 1px solid rgba(var(--brand-accent-rgb), 0.3);
+}
+
+/* Color-coded badges based on weight */
+.top-factor-badge.weight-9 {
+    background-color: var(--badge-red);
+    color: white;
+    border-color: var(--badge-red);
+}
+
+.top-factor-badge.weight-8 {
+    background-color: var(--badge-orange);
+    color: white;
+    border-color: var(--badge-orange);
+}
+
+.top-factor-badge.weight-7 {
+    background-color: var(--badge-gold);
+    color: white;
+    border-color: var(--badge-gold);
+}
+
+[data-bs-theme="dark"] .top-factor-badge {
+    color: var(--brand-accent);
+}
+
+[data-bs-theme="dark"] .top-factor-badge.weight-9,
+[data-bs-theme="dark"] .top-factor-badge.weight-8,
+[data-bs-theme="dark"] .top-factor-badge.weight-7 {
+    color: white;
+}
+
+
+/* --------------------------------------------------------------------------
+   10. Hero Card (Institution Detail)
+   -------------------------------------------------------------------------- */
+
+.hero-card {
+    background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-light) 100%);
+    color: var(--text-on-brand);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    box-shadow: var(--shadow-lg);
+    border: none;
+}
+
+.hero-card h1 {
+    color: var(--text-on-brand);
+    font-size: 1.75rem;
+}
+
+.hero-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: var(--brand-accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+}
+
+.hero-ipeds {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+}
+
+/* Metric bar */
+.metric-bar-track {
+    height: 10px;
+    border-radius: 999px;
+    background-color: var(--surface-secondary);
+    overflow: hidden;
+}
+
+.metric-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width var(--transition-slow);
+}
+
+.percentile-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+}
+
+
+/* --------------------------------------------------------------------------
+   11. Modal
+   -------------------------------------------------------------------------- */
+
+.modal-header-brand {
+    background-color: var(--brand-navy);
+    color: var(--text-on-brand);
+    border-bottom: 2px solid var(--brand-accent);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+[data-bs-theme="dark"] .modal-header-brand {
+    background-color: var(--surface-secondary);
+}
+
+.modal-header-brand .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.modal-content {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.formula-box {
+    background-color: var(--surface-code);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    font-size: 0.85rem;
+}
+
+.formula-box code {
+    color: var(--brand-accent);
+    font-weight: 600;
+}
+
+
+/* --------------------------------------------------------------------------
+   12. Import / Upload Zone
+   -------------------------------------------------------------------------- */
+
+.upload-zone {
+    border: 2px dashed var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    text-align: center;
+    transition: all var(--transition-base);
+    background-color: var(--surface-secondary);
+    cursor: pointer;
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+    border-color: var(--brand-accent);
+    background-color: var(--brand-accent-subtle);
+}
+
+.upload-zone .upload-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.upload-zone .upload-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.upload-zone .upload-filename {
+    font-weight: 700;
+    color: var(--brand-accent);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   13. Tabs (Metrics Admin)
+   -------------------------------------------------------------------------- */
+
+.nav-tabs-bold {
+    border-bottom: 2px solid var(--border-default);
+    gap: 0;
+}
+
+.nav-tabs-bold .nav-link {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: -2px;
+    transition: all var(--transition-fast);
+    border-radius: 0;
+    background: none;
+}
+
+.nav-tabs-bold .nav-link:hover {
+    color: var(--text-primary);
+    border-bottom-color: var(--border-default);
+}
+
+.nav-tabs-bold .nav-link.active {
+    color: var(--brand-accent);
+    border-bottom-color: var(--brand-accent);
+    background: none;
+}
+
+.nav-tabs-bold .nav-link .badge {
+    font-size: 0.7rem;
+    vertical-align: middle;
+}
+
+
+/* --------------------------------------------------------------------------
+   14. Animations
+   -------------------------------------------------------------------------- */
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scoreFlash {
+    0%   { background-color: rgba(var(--brand-accent-rgb), 0.3); }
+    100% { background-color: transparent; }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+}
+
+.fade-in        { animation: fadeIn 0.35s ease-in-out; }
+.fade-out       { animation: fadeOut 0.25s ease-in-out forwards; }
+.loading-pulse  { animation: pulse 1.5s ease-in-out infinite; }
+.rank-row-enter { animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.score-flash    { animation: scoreFlash 0.8s ease-out; }
+
+
+/* --------------------------------------------------------------------------
+   15. Utility Helpers
+   -------------------------------------------------------------------------- */
+
+.bg-surface-secondary {
+    background-color: var(--surface-secondary) !important;
+}
+
+.bg-surface-code {
+    background-color: var(--surface-code) !important;
+}
+
+.text-on-brand {
+    color: var(--text-on-brand) !important;
+}
+
+.border-accent {
+    border-color: var(--brand-accent) !important;
+}
+
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.empty-state h5 {
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+/* Smooth scroll */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Selection color */
+::selection {
+    background-color: rgba(var(--brand-accent-rgb), 0.3);
+    color: var(--text-primary);
+}
+
+
+/* --------------------------------------------------------------------------
+   16. Dropdown Filters
+   -------------------------------------------------------------------------- */
+
+.dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-md);
+}
+
+.dropdown-item {
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background-color: var(--brand-accent-subtle);
+}
+
+.dropdown-item label {
+    cursor: pointer;
+    margin: 0;
+    width: 100%;
+}
+
+/* Prevent dropdown from closing when clicking checkboxes */
+.dropdown-menu label {
+    display: block;
+}
+
+
+/* --------------------------------------------------------------------------
+   17. Responsive
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 767.98px) {
+    .sidebar-sticky {
+        position: static;
+        max-height: none;
+    }
+
+    .rankings-table th:nth-child(3),
+    .rankings-table td:nth-child(3) {
+        min-width: 200px;
+    }
+
+    .hero-card {
+        padding: 1.25rem;
+    }
+
+    .hero-card h1 {
+        font-size: 1.25rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .container {
+        max-width: 1140px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1280px;
+    }
+}
+
+
+/* --------------------------------------------------------------------------
+   17. Search input (Metrics admin)
+   -------------------------------------------------------------------------- */
+
+.search-input {
+    background-color: var(--surface-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+    width: 100%;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 3px rgba(var(--brand-accent-rgb), 0.15);
+    background-color: var(--surface-card);
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+}
+
+
+/* --------------------------------------------------------------------------
+   18. Button Overrides
+   -------------------------------------------------------------------------- */
+
+.btn-accent {
+    background-color: var(--brand-accent);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.btn-accent:hover {
+    background-color: var(--brand-accent-hover);
+    color: #fff;
+    box-shadow: var(--shadow-accent);
+}
+
+.btn-outline-accent {
+    background-color: transparent;
+    color: var(--brand-accent);
+    font-weight: 600;
+    border: 1px solid var(--brand-accent);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.btn-outline-accent:hover {
+    background-color: var(--brand-accent);
+    color: #fff;
+}
+
+/* Softer outline for secondary actions */
+.btn-ghost {
+    background-color: transparent;
+    color: var(--text-secondary);
+    font-weight: 500;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    transition: all var(--transition-fast);
+}
+
+.btn-ghost:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+    background-color: var(--surface-secondary);
+}
+
+/* Filter buttons (for attribute dropdowns) */
+.btn-filter-active {
+    background-color: var(--filter-active);
+    color: #fff;
+    font-weight: 500;
+    border: none;
+    transition: all var(--transition-fast);
+}
+
+.btn-filter-active:hover {
+    background-color: #4338CA;
+    color: #fff;
+}
+
+.btn-filter-inactive {
+    background-color: var(--filter-inactive);
+    color: var(--filter-inactive-text);
+    font-weight: 500;
+    border: none;
+    transition: all var(--transition-fast);
+}
+
+.btn-filter-inactive:hover {
+    background-color: var(--filter-inactive-hover);
+    color: var(--filter-inactive-text);
+}
+
+/* Sticky table header */
+.thead-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.thead-sticky th {
+    background-color: var(--thead-bg) !important;
+    color: var(--thead-text) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-top: none !important;
+}
+
+/* Expandable row styles */
+.expandable-row {
+    cursor: pointer;
+}
+
+.chevron-icon {
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.expanded-content td {
+    background-color: var(--surface-secondary) !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+.expanded-content .row {
+    max-width: 900px;
+    margin: 0 auto;
+}
