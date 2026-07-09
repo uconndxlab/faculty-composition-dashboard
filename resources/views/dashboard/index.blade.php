@@ -91,62 +91,20 @@
 </section>
 
 <section class="card chart-panel mb-4">
-    <div class="card-header">
+    <div class="card-header d-flex flex-column flex-md-row justify-content-between gap-3 align-items-md-center">
+        <div>
         <div class="fw-semibold">{{ $selectedInstitution }} Faculty Composition Over Time</div>
-        <div class="text-muted small">Shows whether the institution is shifting toward or away from tenure-system, non-tenure, senior-rank, and assistant-rank faculty over time.</div>
+        <div class="text-muted small">Toggle between share and count views for tenure-system and non-tenure faculty. Total faculty remains visible for scale.</div>
+        </div>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Chart measure">
+            <button type="button" class="btn btn-outline-primary active" data-composition-mode="shares">Shares</button>
+            <button type="button" class="btn btn-outline-primary" data-composition-mode="counts">Counts</button>
+        </div>
     </div>
     <div class="card-body">
         <canvas id="compositionChart" height="80"></canvas>
     </div>
 </section>
-
-@if($isUconnSelected && $peers->isNotEmpty())
-<section class="card mb-4">
-    <div class="card-header">
-        <div class="fw-semibold">Most Similar Institutions by Faculty Composition</div>
-        <div class="text-muted small">
-            These institutions most closely resemble UConn&rsquo;s {{ $selectedYear }} faculty composition. Composite rank blends tenure-status mix, faculty-rank mix, and the full rank-by-tenure profile. Lower rank means more similar; this is not an overall institutional peer ranking.
-        </div>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-sm table-hover table-custom mb-0">
-            <thead>
-                <tr>
-                    <th>Composite Rank</th>
-                    <th>Institution</th>
-                    <th>Sector</th>
-                    <th class="text-end">Total Faculty</th>
-                    <th class="text-end">Tenure-System</th>
-                    <th class="text-end">Non-Tenure</th>
-                    <th class="text-end">Assistant</th>
-                    <th class="text-end">Senior</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($peers as $peer)
-                <tr>
-                    <td class="number-tabular">{{ $peer['rank'] }}</td>
-                    <td>{{ $peer['institution'] }}</td>
-                    <td>{{ $peer['sector'] }}</td>
-                    <td class="text-end number-tabular">{{ $peer['total_faculty'] }}</td>
-                    <td class="text-end number-tabular">{{ $peer['tenure_system_share'] }}</td>
-                    <td class="text-end number-tabular">{{ $peer['non_tenure_share'] }}</td>
-                    <td class="text-end number-tabular">{{ $peer['assistant_share'] }}</td>
-                    <td class="text-end number-tabular">{{ $peer['senior_share'] }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    <div class="panel-note">
-        The share columns are visible composition measures from the selected-year faculty summary data. They help explain the ranking, but the exact distance values are not included in the imported similarity file.
-    </div>
-</section>
-@elseif(! $isUconnSelected)
-<div class="alert alert-light border small mb-4">
-    Peer similarity rankings are currently UConn-centered and are shown only when University of Connecticut is selected.
-</div>
-@endif
 
 @endif
 
@@ -156,26 +114,66 @@
 @push('scripts')
 <script>
 const chartData = @json($chartData);
+const compositionModeButtons = [...document.querySelectorAll('[data-composition-mode]')];
 
-new Chart(document.getElementById('compositionChart'), {
+const compositionChart = new Chart(document.getElementById('compositionChart'), {
     type: 'line',
-    data: chartData,
+    data: {
+        labels: chartData.labels,
+        datasets: chartData.modes.shares,
+    },
     options: {
         responsive: true,
         interaction: { mode: 'index', intersect: false },
         plugins: {
             legend: { position: 'top' },
+            tooltip: {
+                callbacks: {
+                    label: (context) => {
+                        if (context.parsed.y === null || context.parsed.y === undefined) {
+                            return `${context.dataset.label}: —`;
+                        }
+                        const value = Number(context.parsed.y).toLocaleString(undefined, { maximumFractionDigits: context.dataset.yAxisID === 'faculty' ? 0 : 1 });
+                        return context.dataset.yAxisID === 'faculty'
+                            ? `${context.dataset.label}: ${value}`
+                            : `${context.dataset.label}: ${value}%`;
+                    },
+                },
+            },
         },
         scales: {
             x: {
                 title: { display: true, text: 'Year' },
             },
-            y: {
+            percent: {
+                position: 'left',
+                display: true,
                 title: { display: true, text: 'Percent (%)' },
                 ticks: { callback: (v) => v + '%' },
             },
+            faculty: {
+                position: 'right',
+                title: { display: true, text: 'Total Faculty' },
+                grid: { drawOnChartArea: false },
+                ticks: { callback: (v) => Number(v).toLocaleString() },
+            },
         },
     },
+});
+
+function setCompositionMode(mode) {
+    compositionChart.data.datasets = chartData.modes[mode] || chartData.modes.shares;
+    compositionChart.options.scales.percent.display = mode === 'shares';
+    compositionChart.options.scales.faculty.position = mode === 'shares' ? 'right' : 'left';
+    compositionChart.options.scales.faculty.title.text = mode === 'shares' ? 'Total Faculty' : 'Faculty Count';
+    compositionModeButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.compositionMode === mode);
+    });
+    compositionChart.update();
+}
+
+compositionModeButtons.forEach((button) => {
+    button.addEventListener('click', () => setCompositionMode(button.dataset.compositionMode));
 });
 </script>
 @endpush

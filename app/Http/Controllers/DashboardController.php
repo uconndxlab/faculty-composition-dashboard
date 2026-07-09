@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\FacultySummary;
-use App\Models\SimilarityRanking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -20,13 +19,11 @@ class DashboardController extends Controller
             $selectedYear = null;
             $institutions = collect();
             $years = collect();
-            $isUconnSelected = true;
             $snapshotCards = [];
             $rankMixCards = [];
             $chartData = $this->buildChartData(collect());
-            $peers = collect();
 
-            return view('dashboard.index', compact('latest', 'latestYear', 'selectedInstitution', 'selectedYear', 'institutions', 'years', 'isUconnSelected', 'snapshotCards', 'rankMixCards', 'chartData', 'peers'));
+            return view('dashboard.index', compact('latest', 'latestYear', 'selectedInstitution', 'selectedYear', 'institutions', 'years', 'snapshotCards', 'rankMixCards', 'chartData'));
         }
 
         $institutions = FacultySummary::whereNotNull('institution')
@@ -62,7 +59,6 @@ class DashboardController extends Controller
             : null;
 
         $latestYear = $selectedYear;
-        $isUconnSelected = $selectedInstitution === self::UCONN;
 
         $history = $selectedInstitution
             ? FacultySummary::where('institution', $selectedInstitution)
@@ -75,53 +71,7 @@ class DashboardController extends Controller
 
         $chartData = $this->buildChartData($history);
 
-        $peers = $isUconnSelected ? $this->buildPeerRows($selectedYear) : collect();
-
-        return view('dashboard.index', compact('latest', 'latestYear', 'selectedInstitution', 'selectedYear', 'institutions', 'years', 'isUconnSelected', 'snapshotCards', 'rankMixCards', 'chartData', 'peers'));
-    }
-
-    private function buildPeerRows(?int $year)
-    {
-        if (! $year || ! Schema::hasTable('similarity_rankings')) {
-            return collect();
-        }
-
-        $rankings = SimilarityRanking::orderBy('composite_similarity_rank')
-            ->limit(10)
-            ->get();
-
-        if ($rankings->isEmpty() || ! Schema::hasTable('faculty_summaries')) {
-            return $rankings->map(fn($peer) => [
-                'rank' => $peer->composite_similarity_rank,
-                'institution' => $peer->institution,
-                'sector' => $peer->sector,
-                'total_faculty' => $peer->total_faculty !== null ? number_format($peer->total_faculty) : '—',
-                'tenure_system_share' => '—',
-                'non_tenure_share' => '—',
-                'assistant_share' => '—',
-                'senior_share' => '—',
-            ]);
-        }
-
-        $summaries = FacultySummary::where('year', $year)
-            ->whereIn('institution', $rankings->pluck('institution'))
-            ->get()
-            ->keyBy('institution');
-
-        return $rankings->map(function ($peer) use ($summaries) {
-            $summary = $summaries->get($peer->institution);
-
-            return [
-                'rank' => $peer->composite_similarity_rank,
-                'institution' => $peer->institution,
-                'sector' => $peer->sector,
-                'total_faculty' => $summary?->total_faculty !== null ? number_format($summary->total_faculty) : ($peer->total_faculty !== null ? number_format($peer->total_faculty) : '—'),
-                'tenure_system_share' => $this->formatPercent($summary?->pct_tenure_system),
-                'non_tenure_share' => $this->formatPercent($summary?->pct_non_tenure),
-                'assistant_share' => $this->formatPercent($summary?->pct_assistant_professor),
-                'senior_share' => $this->formatPercent($summary?->pct_senior_faculty),
-            ];
-        });
+        return view('dashboard.index', compact('latest', 'latestYear', 'selectedInstitution', 'selectedYear', 'institutions', 'years', 'snapshotCards', 'rankMixCards', 'chartData'));
     }
 
     private function buildSnapshotCards(FacultySummary $latest, $history): array
@@ -182,38 +132,64 @@ class DashboardController extends Controller
 
         return [
             'labels' => $history->pluck('year')->values()->toArray(),
-            'datasets' => [
-                [
-                    'label'           => 'Tenure-System Share',
-                    'data'            => $history->map(fn($r) => $pct($r->pct_tenure_system))->values()->toArray(),
-                    'borderColor'     => '#0d6efd',
-                    'backgroundColor' => 'transparent',
-                    'tension'         => 0.3,
-                    'fill'            => false,
+            'modes' => [
+                'shares' => [
+                    [
+                        'label'           => 'Tenure-System Share',
+                        'data'            => $history->map(fn($r) => $pct($r->pct_tenure_system))->values()->toArray(),
+                        'borderColor'     => '#0d6efd',
+                        'backgroundColor' => 'transparent',
+                        'yAxisID'         => 'percent',
+                        'tension'         => 0.3,
+                        'fill'            => false,
+                    ],
+                    [
+                        'label'           => 'Non-Tenure Share',
+                        'data'            => $history->map(fn($r) => $pct($r->pct_non_tenure))->values()->toArray(),
+                        'borderColor'     => '#dc3545',
+                        'backgroundColor' => 'transparent',
+                        'yAxisID'         => 'percent',
+                        'tension'         => 0.3,
+                        'fill'            => false,
+                    ],
+                    [
+                        'label'           => 'Total Faculty',
+                        'data'            => $history->map(fn($r) => $r->total_faculty !== null ? (float) $r->total_faculty : null)->values()->toArray(),
+                        'borderColor'     => '#198754',
+                        'backgroundColor' => 'transparent',
+                        'yAxisID'         => 'faculty',
+                        'tension'         => 0.3,
+                        'fill'            => false,
+                    ],
                 ],
-                [
-                    'label'           => 'Senior Faculty Share',
-                    'data'            => $history->map(fn($r) => $pct($r->pct_senior_faculty))->values()->toArray(),
-                    'borderColor'     => '#198754',
-                    'backgroundColor' => 'transparent',
-                    'tension'         => 0.3,
-                    'fill'            => false,
-                ],
-                [
-                    'label'           => 'Assistant Professor Share',
-                    'data'            => $history->map(fn($r) => $pct($r->pct_assistant_professor))->values()->toArray(),
-                    'borderColor'     => '#fd7e14',
-                    'backgroundColor' => 'transparent',
-                    'tension'         => 0.3,
-                    'fill'            => false,
-                ],
-                [
-                    'label'           => 'Non-Tenure Share',
-                    'data'            => $history->map(fn($r) => $pct($r->pct_non_tenure))->values()->toArray(),
-                    'borderColor'     => '#dc3545',
-                    'backgroundColor' => 'transparent',
-                    'tension'         => 0.3,
-                    'fill'            => false,
+                'counts' => [
+                    [
+                        'label'           => 'Tenure-System Count',
+                        'data'            => $history->map(fn($r) => $r->tenure_system_total !== null ? (float) $r->tenure_system_total : null)->values()->toArray(),
+                        'borderColor'     => '#0d6efd',
+                        'backgroundColor' => 'transparent',
+                        'yAxisID'         => 'faculty',
+                        'tension'         => 0.3,
+                        'fill'            => false,
+                    ],
+                    [
+                        'label'           => 'Non-Tenure Count',
+                        'data'            => $history->map(fn($r) => $r->non_tenure_total !== null ? (float) $r->non_tenure_total : null)->values()->toArray(),
+                        'borderColor'     => '#dc3545',
+                        'backgroundColor' => 'transparent',
+                        'yAxisID'         => 'faculty',
+                        'tension'         => 0.3,
+                        'fill'            => false,
+                    ],
+                    [
+                        'label'           => 'Total Faculty',
+                        'data'            => $history->map(fn($r) => $r->total_faculty !== null ? (float) $r->total_faculty : null)->values()->toArray(),
+                        'borderColor'     => '#198754',
+                        'backgroundColor' => 'transparent',
+                        'yAxisID'         => 'faculty',
+                        'tension'         => 0.3,
+                        'fill'            => false,
+                    ],
                 ],
             ],
         ];
