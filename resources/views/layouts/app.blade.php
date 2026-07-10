@@ -18,6 +18,7 @@
     $navItems = [
         ['label' => 'Dashboard', 'short' => 'D', 'href' => url('/'), 'active' => request()->is('/')],
         ['label' => 'Peer Trends', 'short' => 'T', 'href' => url('/trends'), 'active' => request()->is('trends') || request()->is('peers')],
+        ['label' => 'Modeling', 'short' => 'M', 'href' => url('/modeling'), 'active' => request()->is('modeling')],
         ['label' => 'Imports', 'short' => 'I', 'href' => url('/imports'), 'active' => request()->is('imports')],
     ];
 @endphp
