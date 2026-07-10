@@ -16,9 +16,9 @@
 <body>
 @php
     $navItems = [
-        ['label' => 'Dashboard', 'href' => url('/'), 'active' => request()->is('/')],
-        ['label' => 'Peer Trends', 'href' => url('/trends'), 'active' => request()->is('trends*') || request()->is('peers*')],
-        ['label' => 'Imports', 'href' => url('/imports'), 'active' => request()->is('imports*')],
+        ['label' => 'Dashboard', 'short' => 'D', 'href' => url('/'), 'active' => request()->is('/')],
+        ['label' => 'Peer Trends', 'short' => 'T', 'href' => url('/trends'), 'active' => request()->is('trends') || request()->is('peers')],
+        ['label' => 'Imports', 'short' => 'I', 'href' => url('/imports'), 'active' => request()->is('imports')],
     ];
 @endphp
 <div class="app-shell">
@@ -43,7 +43,7 @@
         </a>
         <nav class="app-nav">
             @foreach($navItems as $item)
-                <a class="app-nav-link {{ $item['active'] ? 'active' : '' }}" href="{{ $item['href'] }}">
+                <a class="app-nav-link {{ $item['active'] ? 'active' : '' }}" href="{{ $item['href'] }}" data-short-label="{{ $item['short'] }}" title="{{ $item['label'] }}">
                     <span class="app-nav-text">{{ $item['label'] }}</span>
                 </a>
             @endforeach

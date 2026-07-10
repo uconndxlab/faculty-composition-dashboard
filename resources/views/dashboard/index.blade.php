@@ -15,6 +15,7 @@
         <button class="sidebar-collapse-toggle context-sidebar-toggle" type="button" data-context-sidebar-toggle aria-label="Collapse dashboard filters">
             ‹
         </button>
+        <div class="context-sidebar-rail-label">Dashboard</div>
         <div class="context-sidebar-content">
             <div class="context-sidebar-header">
                 <div class="page-kicker">Institution Snapshot</div>

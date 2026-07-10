@@ -23,6 +23,7 @@
         <button class="sidebar-collapse-toggle context-sidebar-toggle" type="button" data-context-sidebar-toggle aria-label="Collapse import controls">
             ‹
         </button>
+        <div class="context-sidebar-rail-label">Imports</div>
         <div class="context-sidebar-content">
         <div class="context-sidebar-header">
             <div class="page-kicker">Data Operations</div>
