@@ -53,6 +53,20 @@
                 </div>
             </div>
             <div class="peer-sidebar-section">
+                <div class="form-label mb-2">Benchmarks</div>
+                <div class="d-grid gap-2">
+                    <div class="form-check benchmark-check">
+                        <input class="form-check-input dashboard-benchmark-toggle" type="checkbox" value="R1" id="dashboardBenchmarkR1" checked>
+                        <label class="form-check-label fw-semibold" for="dashboardBenchmarkR1">R1 average</label>
+                    </div>
+                    <div class="form-check benchmark-check">
+                        <input class="form-check-input dashboard-benchmark-toggle" type="checkbox" value="R2" id="dashboardBenchmarkR2">
+                        <label class="form-check-label fw-semibold" for="dashboardBenchmarkR2">R2 average</label>
+                    </div>
+                </div>
+                <p class="kpi-note mt-2">Share metrics use average; faculty counts use median.</p>
+            </div>
+            <div class="peer-sidebar-section">
                 <label for="dashboardOutlookHorizon" class="form-label">Outlook horizon</label>
                 <div class="outlook-slider-value"><span id="dashboardOutlookHorizonLabel">3 years ahead</span></div>
                 <input id="dashboardOutlookHorizon" class="form-range" type="range" min="0" max="15" step="1" value="3">
@@ -152,7 +166,13 @@ const dashboardOutlookHorizon = document.getElementById('dashboardOutlookHorizon
 const dashboardOutlookHorizonLabel = document.getElementById('dashboardOutlookHorizonLabel');
 const dashboardOutlookNote = document.getElementById('dashboardOutlookNote');
 const dashboardSlopeSummary = document.getElementById('dashboardSlopeSummary');
+const dashboardBenchmarkToggleInputs = [...document.querySelectorAll('.dashboard-benchmark-toggle')];
 let currentCompositionMode = 'shares';
+const hiddenDashboardSeries = new Set();
+const dashboardBenchmarkStyles = {
+    R1: { label: 'R1 average', dash: [8, 5] },
+    R2: { label: 'R2 average', dash: [2, 6] },
+};
 
 const dashboardOutlookBoundaryPlugin = {
     id: 'dashboardOutlookBoundary',
@@ -254,18 +274,51 @@ function dashboardFutureLabels(horizon) {
     return Array.from({ length: horizon }, (_, index) => latestYear + index + 1);
 }
 
+function enabledDashboardBenchmarks() {
+    return dashboardBenchmarkToggleInputs
+        .filter((input) => input.checked)
+        .map((input) => input.value);
+}
+
+function dashboardBaseDatasetsForMode(mode) {
+    const selectedDatasets = (chartData.modes[mode] || chartData.modes.shares).map((dataset) => ({
+        ...dataset,
+        sourceLabel: 'Selected institution',
+        sourceKey: 'selected',
+    }));
+
+    const benchmarkDatasets = enabledDashboardBenchmarks().flatMap((bucket) => {
+        const benchmark = chartData.benchmarks?.[bucket];
+        const style = dashboardBenchmarkStyles[bucket] || { label: `${bucket} average`, dash: [8, 5] };
+
+        return (benchmark?.modes?.[mode] || []).map((dataset) => ({
+            ...dataset,
+            label: `${style.label} ${dataset.label}`,
+            borderDash: style.dash,
+            borderWidth: 2,
+            pointRadius: 1.5,
+            sourceLabel: style.label,
+            sourceKey: bucket,
+        }));
+    });
+
+    return [...selectedDatasets, ...benchmarkDatasets];
+}
+
 function dashboardDatasetsForMode(mode) {
     const horizon = dashboardHorizon();
     const actualLabels = chartData.labels;
     const futureLabels = dashboardFutureLabels(horizon);
     const actualPadding = Array(Math.max(actualLabels.length - 1, 0)).fill(null);
 
-    return (chartData.modes[mode] || chartData.modes.shares).flatMap((dataset) => {
+    return dashboardBaseDatasetsForMode(mode).flatMap((dataset) => {
         const slope = dashboardSlope(actualLabels, dataset.data);
         const latestValue = [...dataset.data].reverse().find((value) => value !== null && value !== undefined);
+        const seriesKey = `${mode}:${dataset.sourceKey}:${dataset.label}`;
         const historyDataset = {
             ...dataset,
             data: [...dataset.data, ...Array(futureLabels.length).fill(null)],
+            seriesKey,
         };
         const outlookValues = horizon > 0 && latestValue !== undefined && slope !== null
             ? [latestValue, ...futureLabels.map((_, index) => dashboardProjectedValue(latestValue, slope, index + 1, dataset))]
@@ -278,6 +331,7 @@ function dashboardDatasetsForMode(mode) {
             borderWidth: 2,
             pointRadius: 0,
             isOutlook: true,
+            seriesKey,
             slope,
         };
 
@@ -292,7 +346,7 @@ function dashboardLabels() {
 }
 
 function renderDashboardSlopeSummary() {
-    const datasets = chartData.modes[currentCompositionMode] || chartData.modes.shares;
+    const datasets = dashboardBaseDatasetsForMode(currentCompositionMode);
     dashboardSlopeSummary.innerHTML = datasets.map((dataset) => {
         const slope = dashboardSlope(chartData.labels, dataset.data);
         return `<span class="benchmark-chip">${dataset.label} slope: ${dashboardFormatSlope(slope, dataset)}</span>`;
@@ -304,6 +358,9 @@ function renderDashboardChart() {
     updateDashboardHorizonLabel();
     compositionChart.data.labels = dashboardLabels();
     compositionChart.data.datasets = dashboardDatasetsForMode(currentCompositionMode);
+    compositionChart.data.datasets.forEach((dataset, index) => {
+        compositionChart.setDatasetVisibility(index, !hiddenDashboardSeries.has(dataset.seriesKey));
+    });
     compositionChart.options.scales.percent.display = currentCompositionMode === 'shares';
     compositionChart.options.scales.faculty.position = currentCompositionMode === 'shares' ? 'right' : 'left';
     compositionChart.options.scales.faculty.title.text = currentCompositionMode === 'shares' ? 'Total Faculty' : 'Faculty Count';
@@ -326,6 +383,29 @@ const compositionChart = new Chart(document.getElementById('compositionChart'), 
         plugins: {
             legend: {
                 position: 'top',
+                onClick: (event, item, legend) => {
+                    const chart = legend.chart;
+                    const dataset = chart.data.datasets[item.datasetIndex];
+
+                    if (!dataset?.seriesKey) {
+                        return;
+                    }
+
+                    const shouldShow = !chart.isDatasetVisible(item.datasetIndex);
+                    chart.data.datasets.forEach((candidate, index) => {
+                        if (candidate.seriesKey === dataset.seriesKey) {
+                            chart.setDatasetVisibility(index, shouldShow);
+                        }
+                    });
+
+                    if (shouldShow) {
+                        hiddenDashboardSeries.delete(dataset.seriesKey);
+                    } else {
+                        hiddenDashboardSeries.add(dataset.seriesKey);
+                    }
+
+                    chart.update();
+                },
                 labels: {
                     filter: (item, chart) => !chart.datasets[item.datasetIndex]?.isOutlook,
                 },
@@ -377,6 +457,19 @@ function setCompositionMode(mode) {
 
 compositionModeButtons.forEach((button) => {
     button.addEventListener('click', () => setCompositionMode(button.dataset.compositionMode));
+});
+dashboardBenchmarkToggleInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+        if (input.checked) {
+            dashboardBenchmarkToggleInputs.forEach((otherInput) => {
+                if (otherInput !== input) {
+                    otherInput.checked = false;
+                }
+            });
+        }
+
+        renderDashboardChart();
+    });
 });
 dashboardOutlookHorizon.addEventListener('input', renderDashboardChart);
 renderDashboardChart();

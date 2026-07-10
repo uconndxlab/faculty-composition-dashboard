@@ -129,9 +129,10 @@ class DashboardController extends Controller
     private function buildChartData($history): array
     {
         $pct = fn($v) => $v !== null ? round((float) $v * 100, 2) : null;
+        $labels = $history->pluck('year')->values();
 
         return [
-            'labels' => $history->pluck('year')->values()->toArray(),
+            'labels' => $labels->toArray(),
             'modes' => [
                 'shares' => [
                     [
@@ -192,7 +193,94 @@ class DashboardController extends Controller
                     ],
                 ],
             ],
+            'benchmarks' => $this->buildBenchmarkChartData($labels),
         ];
+    }
+
+    private function buildBenchmarkChartData($labels): array
+    {
+        $rows = FacultySummary::whereNotNull('carnegie_classification')
+            ->whereNotNull('year')
+            ->orderBy('year')
+            ->get()
+            ->map(function (FacultySummary $summary) {
+                $bucket = $this->benchmarkBucket($summary->carnegie_classification);
+
+                return $bucket ? ['bucket' => $bucket, 'summary' => $summary] : null;
+            })
+            ->filter();
+
+        return collect(['R1' => 'R1 average', 'R2' => 'R2 average'])
+            ->mapWithKeys(function (string $label, string $bucket) use ($rows, $labels) {
+                $bucketRows = $rows
+                    ->filter(fn($row) => ($row['bucket'] ?? null) === $bucket)
+                    ->pluck('summary')
+                    ->groupBy('year')
+                    ->sortKeys();
+
+                return [
+                    $bucket => [
+                        'label' => $label,
+                        'modes' => [
+                            'shares' => [
+                                $this->benchmarkDataset($bucketRows, $labels, 'Tenure-System Share', 'pct_tenure_system', '#7c3aed', 'percent'),
+                                $this->benchmarkDataset($bucketRows, $labels, 'Non-Tenure Share', 'pct_non_tenure', '#f97316', 'percent'),
+                                $this->benchmarkDataset($bucketRows, $labels, 'Total Faculty', 'total_faculty', '#0f172a', 'faculty'),
+                            ],
+                            'counts' => [
+                                $this->benchmarkDataset($bucketRows, $labels, 'Tenure-System Count', 'tenure_system_total', '#7c3aed', 'faculty'),
+                                $this->benchmarkDataset($bucketRows, $labels, 'Non-Tenure Count', 'non_tenure_total', '#f97316', 'faculty'),
+                                $this->benchmarkDataset($bucketRows, $labels, 'Total Faculty', 'total_faculty', '#0f172a', 'faculty'),
+                            ],
+                        ],
+                    ],
+                ];
+            })
+            ->toArray();
+    }
+
+    private function benchmarkDataset($bucketRows, $labels, string $label, string $column, string $color, string $axis): array
+    {
+        return [
+            'label' => $label,
+            'data' => $labels->map(function ($year) use ($bucketRows, $column, $axis) {
+                $yearRows = collect($bucketRows->get($year, []));
+                $values = $yearRows
+                    ->pluck($column)
+                    ->filter(fn($value) => $value !== null)
+                    ->map(fn($value) => (float) $value)
+                    ->values();
+
+                if ($values->isEmpty()) {
+                    return null;
+                }
+
+                $value = $axis === 'faculty' ? $values->median() : $values->avg();
+
+                return $axis === 'percent' ? round($value * 100, 2) : round($value, 2);
+            })->values()->toArray(),
+            'borderColor' => $color,
+            'backgroundColor' => 'transparent',
+            'yAxisID' => $axis,
+            'tension' => 0.3,
+            'fill' => false,
+            'isBenchmark' => true,
+        ];
+    }
+
+    private function benchmarkBucket(?string $carnegieClassification): ?string
+    {
+        if ($carnegieClassification === null) {
+            return null;
+        }
+
+        $classification = trim($carnegieClassification);
+
+        return match (true) {
+            preg_match('/^Mixed Undergraduate\/Graduate(?:-Doctorate)? Large$/i', $classification) === 1 => 'R1',
+            preg_match('/^Mixed Undergraduate\/Graduate(?:-Doctorate)? Medium$/i', $classification) === 1 => 'R2',
+            default => null,
+        };
     }
 
     private function formatPercent($value): string

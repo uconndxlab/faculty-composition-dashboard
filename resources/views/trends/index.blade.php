@@ -108,7 +108,7 @@
                     <label class="form-check-label fw-semibold" for="benchmarkR1">R1 average</label>
                 </div>
                 <div class="form-check benchmark-check">
-                    <input class="form-check-input benchmark-toggle" type="checkbox" value="R2" id="benchmarkR2" checked>
+                    <input class="form-check-input benchmark-toggle" type="checkbox" value="R2" id="benchmarkR2">
                     <label class="form-check-label fw-semibold" for="benchmarkR2">R2 average</label>
                 </div>
             </div>
@@ -422,8 +422,8 @@ const workspaceColors = {
     focusFill: 'rgba(37, 99, 235, 0.75)',
     context: 'rgba(108, 117, 125, 0.45)',
     contextBorder: 'rgba(108, 117, 125, 0.8)',
-    R1: '#0f766e',
-    R2: '#b45309',
+    R1: '#7c3aed',
+    R2: '#f97316',
 };
 
 const modeSelect = document.getElementById('comparisonMode');
@@ -454,6 +454,7 @@ const allInstitutionMap = new Map((peerTrendData.allInstitutions || []).map((row
 let lineChart;
 let currentScatterChart;
 let changeScatterChart;
+const hiddenLineSeries = new Set();
 
 const outlookBoundaryPlugin = {
     id: 'outlookBoundary',
@@ -767,6 +768,7 @@ function lineDatasets(metric) {
         const color = isUconn ? workspaceColors.uconn : (isFocus ? workspaceColors.focus : palette[index % palette.length]);
         const latest = latestRow(institution);
         const trend = trendRow(institution, metric.key);
+        const seriesKey = `institution:${institution}:${metric.key}`;
 
         const historyDataset = {
             label: institution,
@@ -777,6 +779,7 @@ function lineDatasets(metric) {
             pointRadius: isUconn || isFocus ? 3 : 2,
             tension: 0.25,
             spanGaps: true,
+            seriesKey,
         };
 
         const outlookDataset = {
@@ -790,6 +793,7 @@ function lineDatasets(metric) {
             tension: 0.2,
             spanGaps: true,
             isOutlook: true,
+            seriesKey,
             slope: trend?.slope,
         };
 
@@ -801,6 +805,7 @@ function lineDatasets(metric) {
         const color = workspaceColors[bucket] || workspaceColors.contextBorder;
         const rows = benchmarkRows(bucket, metric);
         const trend = benchmarkTrend(bucket, metric);
+        const seriesKey = `benchmark:${bucket}:${metric.key}`;
 
         if (rows.length === 0) {
             return [];
@@ -821,6 +826,7 @@ function lineDatasets(metric) {
             pointRadius: 2,
             tension: 0.25,
             spanGaps: true,
+            seriesKey,
         };
 
         const outlookDataset = {
@@ -838,6 +844,7 @@ function lineDatasets(metric) {
             tension: 0.2,
             spanGaps: true,
             isOutlook: true,
+            seriesKey,
             slope: trend?.slope,
         };
 
@@ -859,6 +866,29 @@ function renderLineChart() {
         plugins: {
             legend: {
                 position: 'bottom',
+                onClick: (event, item, legend) => {
+                    const chart = legend.chart;
+                    const dataset = chart.data.datasets[item.datasetIndex];
+
+                    if (!dataset?.seriesKey) {
+                        return;
+                    }
+
+                    const shouldShow = !chart.isDatasetVisible(item.datasetIndex);
+                    chart.data.datasets.forEach((candidate, index) => {
+                        if (candidate.seriesKey === dataset.seriesKey) {
+                            chart.setDatasetVisibility(index, shouldShow);
+                        }
+                    });
+
+                    if (shouldShow) {
+                        hiddenLineSeries.delete(dataset.seriesKey);
+                    } else {
+                        hiddenLineSeries.add(dataset.seriesKey);
+                    }
+
+                    chart.update();
+                },
                 labels: {
                     filter: (item, chart) => !chart.datasets[item.datasetIndex]?.isOutlook,
                 },
@@ -900,8 +930,12 @@ function renderLineChart() {
     } else {
         lineChart.data = data;
         lineChart.options = options;
-        lineChart.update();
     }
+
+    lineChart.data.datasets.forEach((dataset, index) => {
+        lineChart.setDatasetVisibility(index, !hiddenLineSeries.has(dataset.seriesKey));
+    });
+    lineChart.update();
 }
 
 function pointForInstitution(institution, xMetric, yMetric) {
@@ -1217,7 +1251,17 @@ if (metrics().length > 0) {
         });
     });
     customFocusSelect.addEventListener('change', renderWorkspace);
-    benchmarkToggleInputs.forEach((input) => input.addEventListener('change', renderWorkspace));
+    benchmarkToggleInputs.forEach((input) => input.addEventListener('change', () => {
+        if (input.checked) {
+            benchmarkToggleInputs.forEach((otherInput) => {
+                if (otherInput !== input) {
+                    otherInput.checked = false;
+                }
+            });
+        }
+
+        renderWorkspace();
+    }));
     outlookHorizonSelect.addEventListener('change', renderWorkspace);
     setSelect.addEventListener('change', () => {
         updatePeerOptions();
