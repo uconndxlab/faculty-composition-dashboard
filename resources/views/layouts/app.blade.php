@@ -14,31 +14,66 @@
     @stack('styles')
 </head>
 <body>
+@php
+    $navItems = [
+        ['label' => 'Dashboard', 'href' => url('/'), 'active' => request()->is('/')],
+        ['label' => 'Peer Trends', 'href' => url('/trends'), 'active' => request()->is('trends*') || request()->is('peers*')],
+        ['label' => 'Imports', 'href' => url('/imports'), 'active' => request()->is('imports*')],
+    ];
+@endphp
 <div class="app-shell">
 
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-brand-custom">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-semibold" href="{{ url('/') }}">Faculty Dashboard</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="mainNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('/') ? 'active' : '' }}" href="{{ url('/') }}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('trends*') || request()->is('peers*') ? 'active' : '' }}" href="{{ url('/trends') }}">Peer Trends</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('imports*') ? 'active' : '' }}" href="{{ url('/imports') }}">Imports</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <header class="app-mobile-bar">
+        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMobileNav" aria-controls="appMobileNav">
+            Menu
+        </button>
+        <a class="app-mobile-brand" href="{{ url('/') }}">Faculty Dashboard</a>
+    </header>
 
-    <main class="page-frame">
+    <aside class="app-sidebar" aria-label="Primary navigation">
+        <button class="sidebar-collapse-toggle app-sidebar-toggle" type="button" data-app-sidebar-toggle aria-label="Collapse app navigation">
+            ‹
+        </button>
+        <a class="app-brand" href="{{ url('/') }}">
+            <span class="app-brand-mark">FD</span>
+            <span class="app-brand-copy">
+                <span class="app-brand-title">Faculty Dashboard</span>
+                <span class="app-brand-subtitle">UConn Academic Operations</span>
+            </span>
+        </a>
+        <nav class="app-nav">
+            @foreach($navItems as $item)
+                <a class="app-nav-link {{ $item['active'] ? 'active' : '' }}" href="{{ $item['href'] }}">
+                    <span class="app-nav-text">{{ $item['label'] }}</span>
+                </a>
+            @endforeach
+        </nav>
+        <div class="app-sidebar-footer">
+            <div class="app-sidebar-label">Workspace</div>
+            <div class="app-sidebar-note">Institution snapshots, peer comparisons, and import workflows.</div>
+        </div>
+    </aside>
+
+    <div class="offcanvas offcanvas-start app-offcanvas" tabindex="-1" id="appMobileNav" aria-labelledby="appMobileNavLabel">
+        <div class="offcanvas-header">
+            <div>
+                <div class="app-brand-title" id="appMobileNavLabel">Faculty Dashboard</div>
+                <div class="app-brand-subtitle">UConn Academic Operations</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <nav class="app-nav">
+                @foreach($navItems as $item)
+                    <a class="app-nav-link {{ $item['active'] ? 'active' : '' }}" href="{{ $item['href'] }}">
+                        {{ $item['label'] }}
+                    </a>
+                @endforeach
+            </nav>
+        </div>
+    </div>
+
+    <main class="app-main page-frame">
         @if(isset($header))
             <div class="mb-4">
                 <h1 class="h3">{{ $header }}</h1>
@@ -228,6 +263,31 @@
     window.refreshSearchSelect = function refreshSearchSelect(select) {
         select?.searchSelect?.refresh();
     };
+
+    const savedAppSidebarState = window.localStorage.getItem('appSidebarCollapsed');
+    if (savedAppSidebarState === 'true') {
+        document.body.classList.add('app-sidebar-collapsed');
+    }
+
+    document.querySelectorAll('[data-app-sidebar-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            document.body.classList.toggle('app-sidebar-collapsed');
+            window.localStorage.setItem('appSidebarCollapsed', document.body.classList.contains('app-sidebar-collapsed') ? 'true' : 'false');
+        });
+    });
+
+    const savedContextSidebarState = window.localStorage.getItem('contextSidebarCollapsed')
+        ?? window.localStorage.getItem('dashboardSidebarCollapsed');
+    if (savedContextSidebarState === 'true') {
+        document.body.classList.add('context-sidebar-collapsed');
+    }
+
+    document.querySelectorAll('[data-context-sidebar-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            document.body.classList.toggle('context-sidebar-collapsed');
+            window.localStorage.setItem('contextSidebarCollapsed', document.body.classList.contains('context-sidebar-collapsed') ? 'true' : 'false');
+        });
+    });
 
     window.enhanceSearchSelects();
     </script>

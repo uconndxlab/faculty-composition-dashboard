@@ -4,17 +4,6 @@
 
 @section('content')
 
-<div class="page-header">
-    <div>
-        <div class="page-kicker">Peer Comparison Workspace</div>
-        <h1 class="page-title">Peer Trends</h1>
-        <p class="page-subtitle">Compare where UConn is now, how it is moving, and which institutions make useful current or trajectory peers.</p>
-    </div>
-    @if(! empty($peerTrendData['latestYear']))
-        <span class="metric-chip">Latest year {{ $peerTrendData['latestYear'] }}</span>
-    @endif
-</div>
-
 @if($trends->isEmpty())
     <div class="alert alert-warning">
         No trend data found for University of Connecticut. Visit <a href="{{ url('/imports') }}">Imports</a> to load data.
@@ -61,168 +50,213 @@
     </div>
 @endif
 
-<div class="card mb-4">
-    <div class="card-header card-header-brand">
-        <div class="fw-semibold">Comparison Controls</div>
-        <div class="small">Choose a metric, then compare UConn against a ranked peer set or up to four custom institutions.</div>
-    </div>
-    <div class="card-body">
-        <div class="control-panel row g-3 align-items-end">
-            <div class="col-md-4 col-xl-2">
-                <label for="comparisonMode" class="form-label">Compare by</label>
-                <select id="comparisonMode" class="form-select">
-                    <option value="ranked">Ranked set</option>
-                    <option value="custom">Custom institutions</option>
-                </select>
-            </div>
-            <div class="col-md-4 col-xl-3">
-                <label for="workspaceMetric" class="form-label">Primary metric</label>
-                <select id="workspaceMetric" class="form-select"></select>
-            </div>
-            <div class="col-md-4 col-xl-3" id="rankedSetControl">
-                <label for="workspaceSet" class="form-label">Comparison set</label>
-                <select id="workspaceSet" class="form-select"></select>
-            </div>
-            <div class="col-md-4 col-xl-2" id="rankedFocusControl">
-                <label for="workspacePeer" class="form-label">Focus institution</label>
-                <select id="workspacePeer" class="form-select" data-search-select data-search-placeholder="Search focus institutions"></select>
-            </div>
-            <div class="col-md-4 col-xl-2">
-                <div class="form-label mb-2">Visual key</div>
-                <div class="d-flex flex-wrap gap-2">
-                    <span class="visual-key-item"><span class="visual-key-dot visual-key-dot-uconn"></span>UConn</span>
-                    <span class="visual-key-item"><span class="visual-key-dot visual-key-dot-focus"></span>Focus</span>
-                    <span class="visual-key-item"><span class="visual-key-dot visual-key-dot-context"></span>Context</span>
-                    <span class="visual-key-item"><span class="visual-key-dot visual-key-dot-r1"></span>R1</span>
-                    <span class="visual-key-item"><span class="visual-key-dot visual-key-dot-r2"></span>R2</span>
-                </div>
-            </div>
+<div class="context-workspace peer-workspace">
+    <aside class="context-sidebar peer-sidebar" aria-label="Peer trends controls">
+        <button class="sidebar-collapse-toggle context-sidebar-toggle" type="button" data-context-sidebar-toggle aria-label="Collapse peer trends controls">
+            ‹
+        </button>
+        <div class="context-sidebar-content">
+        <div class="context-sidebar-header">
+            <div class="page-kicker">Peer Comparison Workspace</div>
+            <h1 class="page-title">Peer Trends</h1>
+            <p class="page-subtitle">Compare where UConn is now, how it is moving, and which institutions make useful current or trajectory peers.</p>
+            @if(! empty($peerTrendData['latestYear']))
+                <span class="metric-chip">Latest year {{ $peerTrendData['latestYear'] }}</span>
+            @endif
         </div>
-        <div class="control-panel row g-3 align-items-end mt-3 d-none" id="customControls">
+        <div class="peer-sidebar-section">
+            <div class="peer-sidebar-heading">Comparison Setup</div>
+            <p class="kpi-note">UConn is fixed. Add institutions and benchmarks to compare against it.</p>
+        </div>
+        <div class="peer-sidebar-section">
+            <label for="workspaceMetric" class="form-label">Metric</label>
+            <select id="workspaceMetric" class="form-select"></select>
+            <div class="metric-definition" id="metricDefinition">—</div>
+        </div>
+        <div class="peer-sidebar-section">
+            <label for="comparisonMode" class="form-label">Institution source</label>
+            <select id="comparisonMode" class="form-select">
+                <option value="custom">Choose institutions</option>
+                <option value="ranked">Use ranked set</option>
+            </select>
+        </div>
+        <div class="peer-sidebar-section d-none" id="rankedSetControl">
+            <label for="workspaceSet" class="form-label">Ranked set</label>
+            <select id="workspaceSet" class="form-select"></select>
+        </div>
+        <div class="peer-sidebar-section d-none" id="rankedFocusControl">
+            <label for="workspacePeer" class="form-label">Focus institution</label>
+            <select id="workspacePeer" class="form-select" data-search-select data-search-placeholder="Search focus institutions"></select>
+        </div>
+        <div class="peer-sidebar-section" id="customControls">
+            <div class="form-label">Compare institutions</div>
             @for($i = 1; $i <= 4; $i++)
-                <div class="col-md-6 col-xl-3">
-                    <label for="customPeer{{ $i }}" class="form-label">Custom peer {{ $i }}</label>
+                <div class="mb-2">
+                    <label for="customPeer{{ $i }}" class="visually-hidden">Custom institution {{ $i }}</label>
                     <select id="customPeer{{ $i }}" class="form-select custom-peer-select" data-search-select data-search-placeholder="Search institutions"></select>
                 </div>
             @endfor
-            <div class="col-md-6 col-xl-3">
-                <label for="customFocusPeer" class="form-label">KPI focus</label>
-                <select id="customFocusPeer" class="form-select" data-search-select data-search-placeholder="Search selected peers"></select>
-            </div>
-            <div class="col-md-6 col-xl-9">
-                <p class="kpi-note mb-0">Custom institutions are not sorted by similarity. They appear in the order selected and can be used for one-to-one comparison or up to four peers.</p>
-            </div>
+            <label for="customFocusPeer" class="form-label mt-2">Primary comparison</label>
+            <select id="customFocusPeer" class="form-select" data-search-select data-search-placeholder="Search selected peers"></select>
         </div>
-        <div class="control-panel row g-3 align-items-center mt-3">
-            <div class="col-md-4 col-xl-3">
-                <div class="form-label mb-2">Benchmark overlays</div>
-                <div class="d-flex flex-wrap gap-3">
-                    <div class="form-check mb-0">
-                        <input class="form-check-input benchmark-toggle" type="checkbox" value="R1" id="benchmarkR1">
-                        <label class="form-check-label fw-semibold" for="benchmarkR1">R1 average</label>
-                    </div>
-                    <div class="form-check mb-0">
-                        <input class="form-check-input benchmark-toggle" type="checkbox" value="R2" id="benchmarkR2">
-                        <label class="form-check-label fw-semibold" for="benchmarkR2">R2 average</label>
-                    </div>
+        <div class="peer-sidebar-section">
+            <div class="form-label mb-2">Benchmarks</div>
+            <div class="d-grid gap-2">
+                <div class="form-check benchmark-check">
+                    <input class="form-check-input benchmark-toggle" type="checkbox" value="R1" id="benchmarkR1" checked>
+                    <label class="form-check-label fw-semibold" for="benchmarkR1">R1 average</label>
+                </div>
+                <div class="form-check benchmark-check">
+                    <input class="form-check-input benchmark-toggle" type="checkbox" value="R2" id="benchmarkR2" checked>
+                    <label class="form-check-label fw-semibold" for="benchmarkR2">R2 average</label>
                 </div>
             </div>
-            <div class="col-md-8 col-xl-9">
-                <p class="kpi-note mb-0">Benchmarks are aggregate trajectories from mapped Carnegie buckets, not ranked peer institutions. Faculty counts use median; share metrics use average.</p>
+            <p class="kpi-note mt-2">Share metrics use average; faculty counts use median.</p>
+        </div>
+        <div class="peer-sidebar-section">
+            <label for="outlookHorizon" class="form-label">Outlook horizon</label>
+            <div class="outlook-slider-value"><span id="outlookHorizonLabel">3 years ahead</span></div>
+            <input id="outlookHorizon" class="form-range" type="range" min="0" max="5" step="1" value="3">
+            <div class="d-flex justify-content-between small text-muted number-tabular">
+                <span>2025</span>
+                <span>+5 yrs</span>
+            </div>
+            <p class="kpi-note mt-2">Outlook extends the average yearly trend. It is not a forecast model.</p>
+        </div>
+        <div class="peer-sidebar-section">
+            <div class="form-label mb-2">Visual key</div>
+            <div class="d-flex flex-wrap gap-2">
+                <span class="visual-key-item"><span class="visual-key-dot visual-key-dot-uconn"></span>UConn</span>
+                <span class="visual-key-item"><span class="visual-key-dot visual-key-dot-focus"></span>Focus</span>
+                <span class="visual-key-item"><span class="visual-key-dot visual-key-dot-context"></span>Context</span>
+                <span class="visual-key-item"><span class="visual-key-dot visual-key-dot-r1"></span>R1</span>
+                <span class="visual-key-item"><span class="visual-key-dot visual-key-dot-r2"></span>R2</span>
             </div>
         </div>
-    </div>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header d-flex flex-column flex-md-row justify-content-between gap-2 align-items-md-center">
-        <div>
-            <div class="fw-semibold">Comparison Set Options</div>
-            <div class="text-muted small">Ranked sets come from imported similarity files. Custom institutions come directly from faculty summaries and are not similarity-ranked.</div>
         </div>
-        <button class="btn btn-sm btn-outline-primary collapse-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#comparisonSetOptionsPanel" aria-expanded="false" aria-controls="comparisonSetOptionsPanel">
-            Details
-        </button>
-    </div>
-    <div class="collapse" id="comparisonSetOptionsPanel">
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-6 col-xl-4">
+    </aside>
+
+    <div class="context-main peer-main">
+        <div class="row g-3 mb-4" id="workspaceStats">
+            <div class="col-md-3">
                 <div class="kpi-card">
-                    <div class="kpi-label">Custom Institutions</div>
-                    <p class="kpi-note mb-2">Choose one to four institutions directly, regardless of imported similarity or trajectory rank.</p>
-                    <div class="small text-muted">
-                        Derived from <code>faculty_summaries</code>. Institutions are shown in selected order, not rank order.
-                    </div>
+                    <div class="kpi-label">UConn Latest</div>
+                    <div class="kpi-value" id="statUconnLatest">—</div>
+                    <p class="kpi-note" id="statUconnLatestSlope">Avg slope —</p>
                 </div>
             </div>
-            <div class="col-md-6 col-xl-4">
+            <div class="col-md-3">
                 <div class="kpi-card">
-                    <div class="kpi-label">R1/R2 Benchmarks</div>
-                    <p class="kpi-note mb-2">Aggregate lines showing average R1 and R2 trajectories for the selected metric.</p>
-                    <div class="small text-muted">
-                        R1 maps to <code>Mixed Undergraduate/Graduate Large</code>; R2 maps to <code>Mixed Undergraduate/Graduate Medium</code>.
+                    <div class="kpi-label">UConn Change</div>
+                    <div class="kpi-value" id="statUconnChange">—</div>
+                    <p class="kpi-note" id="statUconnChangeSlope">Avg slope —</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <div class="kpi-label" id="statPeerLatestLabel">Peer Latest</div>
+                    <div class="kpi-value" id="statPeerLatest">—</div>
+                    <p class="kpi-note" id="statPeerLatestSlope">Avg slope —</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card">
+                    <div class="kpi-label" id="statPeerChangeLabel">Peer Change</div>
+                    <div class="kpi-value" id="statPeerChange">—</div>
+                    <p class="kpi-note" id="statPeerChangeSlope">Avg slope —</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card chart-panel mb-4">
+            <div class="card-header">
+                <div class="fw-semibold">UConn vs Comparisons Over Time</div>
+                <div class="text-muted small">The selected metric is shown by year. UConn stays pinned while institutions and R1/R2 benchmarks provide context.</div>
+                <div class="benchmark-summary d-flex flex-wrap gap-2 mt-2" id="benchmarkSummary"></div>
+                <div class="outlook-chart-note mt-2" id="chartOutlookNote">Dashed lines extend average slopes beyond the latest actual year.</div>
+            </div>
+            <div class="card-body">
+                <canvas id="peerTrendLineChart" height="120"></canvas>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="fw-semibold">Outlook If Average Trends Continue</div>
+                <div class="text-muted small" id="outlookDescription">Linear extension of the latest value using average yearly slope.</div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Target</th>
+                            <th class="text-end">Latest</th>
+                            <th class="text-end">Avg. yearly change</th>
+                            <th class="text-end" id="projectedHeader">Projected</th>
+                            <th class="text-end">Projected gap vs UConn</th>
+                        </tr>
+                    </thead>
+                    <tbody id="outlookBody"></tbody>
+                </table>
+            </div>
+            <div class="panel-note">Outlook extends historical average movement and should be read as directional context, not a prediction.</div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-xl-7">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <div class="fw-semibold">Visible Comparison Set</div>
+                        <div class="text-muted small" id="comparisonSetDescription">—</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-custom mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Institution</th>
+                                    <th>Sector</th>
+                                    <th class="text-end" id="selectedMetricHeader">Metric</th>
+                                    <th class="text-end">Slope</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparisonSetBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-            @foreach($peerTrendData['sets'] ?? [] as $setKey => $set)
-                <div class="col-md-6 col-xl-4">
-                    <div class="kpi-card">
-                        <div class="kpi-label">{{ $set['label'] }}</div>
-                        <p class="kpi-note mb-2">{{ $set['description'] ?? 'Selected comparison set.' }}</p>
-                        <div class="small text-muted">
-                            @if($setKey === 'trajectory')
-                                Derived from <code>trajectory_similarities</code>, ordered by <code>trajectory_similarity_rank</code>.
-                            @else
-                                Derived from <code>similarity_rankings</code>, ordered by <code>{{ $set['rankColumn'] ?? 'rank' }}</code>.
-                            @endif
-                            <span class="number-tabular">{{ count($set['institutions'] ?? []) }}</span> institutions loaded.
-                        </div>
+            <div class="col-xl-5">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between gap-2 align-items-center">
+                        <div class="fw-semibold">Reading the Workspace</div>
+                        <button class="btn btn-sm btn-outline-primary collapse-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#readingWorkspacePanel" aria-expanded="false" aria-controls="readingWorkspacePanel">
+                            Notes
+                        </button>
+                    </div>
+                    <div class="collapse" id="readingWorkspacePanel">
+                    <div class="card-body small text-muted">
+                        <p><strong class="text-body">Current-similar peers</strong> look like UConn in the latest year for the selected dimension.</p>
+                        <p><strong class="text-body">Trajectory-similar peers</strong> are moving like UConn over time, even when their current mix differs.</p>
+                        <p><strong class="text-body">Tenure status and rank/title</strong> are separate dimensions. Non-tenure faculty can hold assistant, associate, or full professor titles, so use the non-tenure rank-detail metrics when that distinction matters.</p>
+                        <p class="mb-0"><strong class="text-body">Slope</strong> is the average yearly rate of change. Percent metrics are shown in percentage points per year.</p>
+                    </div>
                     </div>
                 </div>
-            @endforeach
+            </div>
         </div>
-    </div>
-    </div>
-</div>
 
-<div class="row g-3 mb-4" id="workspaceStats">
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-label">UConn Latest</div>
-            <div class="kpi-value" id="statUconnLatest">—</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-label">UConn Change</div>
-            <div class="kpi-value" id="statUconnChange">—</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-label" id="statPeerLatestLabel">Peer Latest</div>
-            <div class="kpi-value" id="statPeerLatest">—</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="kpi-card">
-            <div class="kpi-label" id="statPeerChangeLabel">Peer Change</div>
-            <div class="kpi-value" id="statPeerChange">—</div>
-        </div>
-    </div>
-</div>
-
-<div class="card chart-panel mb-4">
-    <div class="card-header">
-        <div class="fw-semibold">Movement Over Time</div>
-        <div class="text-muted small">The selected metric is shown by year. UConn stays pinned; the comparison set gives context without requiring a separate page.</div>
-        <div class="benchmark-summary d-flex flex-wrap gap-2 mt-2" id="benchmarkSummary"></div>
-    </div>
-    <div class="card-body">
-        <canvas id="peerTrendLineChart" height="120"></canvas>
-    </div>
-</div>
+        <div class="card mb-4">
+            <div class="card-header d-flex flex-column flex-md-row justify-content-between gap-2 align-items-md-center">
+                <div>
+                    <div class="fw-semibold">Explore Distributions</div>
+                    <div class="text-muted small">Optional scatter views for current value, position, and direction.</div>
+                </div>
+                <button class="btn btn-sm btn-outline-primary collapse-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#distributionPanel" aria-expanded="false" aria-controls="distributionPanel">
+                    Charts
+                </button>
+            </div>
+            <div class="collapse" id="distributionPanel">
+            <div class="card-body">
 
 <div class="row g-3 mb-4">
     <div class="col-xl-7">
@@ -258,49 +292,18 @@
         </div>
     </div>
 </div>
+            </div>
+            </div>
+        </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-xl-7">
-        <div class="card h-100">
-            <div class="card-header">
-                <div class="fw-semibold">Visible Comparison Set</div>
-                <div class="text-muted small" id="comparisonSetDescription">—</div>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-sm table-hover table-custom mb-0">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Institution</th>
-                            <th>Sector</th>
-                            <th class="text-end" id="selectedMetricHeader">Metric</th>
-                            <th class="text-end">Slope</th>
-                        </tr>
-                    </thead>
-                    <tbody id="comparisonSetBody"></tbody>
-                </table>
+        <div class="card mb-4">
+            <div class="card-header d-flex flex-column flex-md-row justify-content-between gap-2 align-items-md-center">
+                <div>
+                    <div class="fw-semibold">Analyst Details</div>
+                    <div class="text-muted small">Trend statistics and trajectory rankings for deeper review.</div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-xl-5">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between gap-2 align-items-center">
-                <div class="fw-semibold">Reading the Workspace</div>
-                <button class="btn btn-sm btn-outline-primary collapse-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#readingWorkspacePanel" aria-expanded="false" aria-controls="readingWorkspacePanel">
-                    Notes
-                </button>
-            </div>
-            <div class="collapse" id="readingWorkspacePanel">
-            <div class="card-body small text-muted">
-                <p><strong class="text-body">Current-similar peers</strong> look like UConn in the latest year for the selected dimension.</p>
-                <p><strong class="text-body">Trajectory-similar peers</strong> are moving like UConn over time, even when their current mix differs.</p>
-                <p><strong class="text-body">Tenure status and rank/title</strong> are separate dimensions. Non-tenure faculty can hold assistant, associate, or full professor titles, so use the non-tenure rank-detail metrics when that distinction matters.</p>
-                <p class="mb-0"><strong class="text-body">Slope</strong> is the average yearly rate of change. Percent metrics are shown in percentage points per year.</p>
-            </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="card mb-4">
     <div class="card-header d-flex flex-column flex-md-row justify-content-between gap-2 align-items-md-center">
@@ -398,6 +401,9 @@
 </div>
 @endif
 
+        </div>
+    </div>
+
 @endif
 
 @endsection
@@ -435,11 +441,48 @@ const scatterYSelect = document.getElementById('scatterYMetric');
 const comparisonSetBody = document.getElementById('comparisonSetBody');
 const comparisonSetDescription = document.getElementById('comparisonSetDescription');
 const selectedMetricHeader = document.getElementById('selectedMetricHeader');
+const metricDefinition = document.getElementById('metricDefinition');
+const outlookHorizonSelect = document.getElementById('outlookHorizon');
+const outlookHorizonLabel = document.getElementById('outlookHorizonLabel');
+const outlookBody = document.getElementById('outlookBody');
+const projectedHeader = document.getElementById('projectedHeader');
+const outlookDescription = document.getElementById('outlookDescription');
+const chartOutlookNote = document.getElementById('chartOutlookNote');
 const allInstitutionMap = new Map((peerTrendData.allInstitutions || []).map((row) => [row.institution, row]));
 
 let lineChart;
 let currentScatterChart;
 let changeScatterChart;
+
+const outlookBoundaryPlugin = {
+    id: 'outlookBoundary',
+    afterDraw(chart) {
+        const latestYear = Number(peerTrendData.latestYear);
+        const horizon = outlookHorizon();
+
+        if (!latestYear || horizon <= 0) {
+            return;
+        }
+
+        const xScale = chart.scales.x;
+        const area = chart.chartArea;
+        const x = xScale.getPixelForValue(latestYear);
+        const ctx = chart.ctx;
+
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = 'rgba(100, 116, 139, 0.55)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, area.top);
+        ctx.lineTo(x, area.bottom);
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(100, 116, 139, 0.9)';
+        ctx.font = '700 11px Rethink Sans, sans-serif';
+        ctx.fillText('Outlook begins', x + 8, area.top + 14);
+        ctx.restore();
+    },
+};
 
 function metrics() {
     return peerTrendData.metrics || [];
@@ -557,6 +600,92 @@ function formatSlope(value, metric) {
     return metric.isPercentMetric ? `${sign}${formatNumber(value, 2)} pp/yr` : `${sign}${formatNumber(value, 1)}/yr`;
 }
 
+function formatGap(value, metric) {
+    if (value === null || value === undefined) {
+        return '—';
+    }
+    const sign = Number(value) >= 0 ? '+' : '';
+    return metric.isPercentMetric ? `${sign}${formatNumber(value, 1)} pp` : `${sign}${formatNumber(value, 0)}`;
+}
+
+function outlookHorizon() {
+    return Number(outlookHorizonSelect.value || 0);
+}
+
+function updateOutlookHorizonLabel() {
+    const horizon = outlookHorizon();
+    outlookHorizonLabel.textContent = horizon === 0
+        ? 'Latest actual year only'
+        : `${horizon} year${horizon === 1 ? '' : 's'} ahead`;
+}
+
+function projectedValue(value, slope, horizon, metric) {
+    if (value === null || value === undefined || slope === null || slope === undefined) {
+        return null;
+    }
+
+    const projected = Number(value) + Number(slope) * Number(horizon);
+
+    if (metric.isPercentMetric) {
+        return Math.min(100, Math.max(0, projected));
+    }
+
+    return Math.max(0, projected);
+}
+
+function linearSlope(points) {
+    if (points.length < 2) {
+        return null;
+    }
+
+    const meanYear = points.reduce((sum, point) => sum + point.year, 0) / points.length;
+    const meanValue = points.reduce((sum, point) => sum + point.value, 0) / points.length;
+    const denominator = points.reduce((sum, point) => sum + Math.pow(point.year - meanYear, 2), 0);
+
+    if (denominator === 0) {
+        return null;
+    }
+
+    return points.reduce((sum, point) => sum + (point.year - meanYear) * (point.value - meanValue), 0) / denominator;
+}
+
+function benchmarkTrend(bucket, metric) {
+    const rows = benchmarkRows(bucket, metric)
+        .filter((row) => row.value !== null && row.value !== undefined)
+        .map((row) => ({ year: Number(row.year), value: Number(row.value), n: row.n }));
+
+    if (rows.length === 0) {
+        return null;
+    }
+
+    const latest = rows[rows.length - 1];
+
+    return {
+        latest: latest.value,
+        slope: linearSlope(rows),
+        latestYear: latest.year,
+        n: latest.n,
+    };
+}
+
+function projectedPointsFromLatest(latestYear, latestValue, slope, horizon, metric) {
+    if (!latestYear || latestValue === null || latestValue === undefined || slope === null || slope === undefined || horizon <= 0) {
+        return [];
+    }
+
+    const points = [{ x: Number(latestYear), y: Number(latestValue), projected: true }];
+
+    for (let offset = 1; offset <= horizon; offset += 1) {
+        points.push({
+            x: Number(latestYear) + offset,
+            y: projectedValue(latestValue, slope, offset, metric),
+            projected: true,
+        });
+    }
+
+    return points;
+}
+
 function fillSelect(select, options, selectedValue = null) {
     select.innerHTML = '';
     options.forEach((option) => {
@@ -621,15 +750,24 @@ function updateModeControls() {
     customControls.classList.toggle('d-none', !isCustomMode());
 }
 
+function updateMetricDefinition() {
+    const metric = selectedMetric();
+    metricDefinition.textContent = `${metric.group} · ${metric.isPercentMetric ? 'Share of total faculty' : 'Faculty count'} · ${metric.changeUnit}/yr trend`;
+}
+
 function lineDatasets(metric) {
     const palette = ['#6c757d', '#198754', '#fd7e14', '#20c997', '#6610f2'];
-    const institutionDatasets = visibleInstitutions().map((institution, index) => {
+    const horizon = outlookHorizon();
+    const latestYear = Number(peerTrendData.latestYear);
+    const institutionDatasets = visibleInstitutions().flatMap((institution, index) => {
         const rows = peerTrendData.series?.[institution] || [];
         const isUconn = institution === peerTrendData.uconn;
         const isFocus = institution === focusInstitution();
         const color = isUconn ? workspaceColors.uconn : (isFocus ? workspaceColors.focus : palette[index % palette.length]);
+        const latest = latestRow(institution);
+        const trend = trendRow(institution, metric.key);
 
-        return {
+        const historyDataset = {
             label: institution,
             data: rows.map((row) => ({ x: row.year, y: row[metric.key] })),
             borderColor: color,
@@ -639,18 +777,35 @@ function lineDatasets(metric) {
             tension: 0.25,
             spanGaps: true,
         };
+
+        const outlookDataset = {
+            label: `${institution} outlook`,
+            data: projectedPointsFromLatest(latestYear, latest?.[metric.key], trend?.slope, horizon, metric),
+            borderColor: color,
+            backgroundColor: color,
+            borderDash: [3, 6],
+            borderWidth: isUconn || isFocus ? 2.5 : 1.75,
+            pointRadius: 0,
+            tension: 0.2,
+            spanGaps: true,
+            isOutlook: true,
+            slope: trend?.slope,
+        };
+
+        return outlookDataset.data.length > 0 ? [historyDataset, outlookDataset] : [historyDataset];
     });
 
-    const benchmarkDatasets = enabledBenchmarks().map((bucket) => {
+    const benchmarkDatasets = enabledBenchmarks().flatMap((bucket) => {
         const benchmark = peerTrendData.benchmarks?.[bucket] || { label: `${bucket} average` };
         const color = workspaceColors[bucket] || workspaceColors.contextBorder;
         const rows = benchmarkRows(bucket, metric);
+        const trend = benchmarkTrend(bucket, metric);
 
         if (rows.length === 0) {
-            return null;
+            return [];
         }
 
-        return {
+        const historyDataset = {
             label: benchmark.label || `${bucket} average`,
             data: rows.map((row) => ({
                 x: row.year,
@@ -666,28 +821,57 @@ function lineDatasets(metric) {
             tension: 0.25,
             spanGaps: true,
         };
-    }).filter(Boolean);
+
+        const outlookDataset = {
+            label: `${benchmark.label || `${bucket} average`} outlook`,
+            data: projectedPointsFromLatest(trend?.latestYear, trend?.latest, trend?.slope, horizon, metric).map((point) => ({
+                ...point,
+                benchmark: bucket,
+                n: trend?.n,
+            })),
+            borderColor: color,
+            backgroundColor: color,
+            borderDash: [2, 8],
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.2,
+            spanGaps: true,
+            isOutlook: true,
+            slope: trend?.slope,
+        };
+
+        return outlookDataset.data.length > 0 ? [historyDataset, outlookDataset] : [historyDataset];
+    });
 
     return [...institutionDatasets, ...benchmarkDatasets];
 }
 
 function renderLineChart() {
     const metric = selectedMetric();
+    const horizon = outlookHorizon();
+    const latestYear = Number(peerTrendData.latestYear);
     const data = { datasets: lineDatasets(metric) };
 
     const options = {
         responsive: true,
         parsing: false,
         plugins: {
-            legend: { position: 'bottom' },
+            legend: {
+                position: 'bottom',
+                labels: {
+                    filter: (item, chart) => !chart.datasets[item.datasetIndex]?.isOutlook,
+                },
+            },
             tooltip: {
                 callbacks: {
                     title: (items) => items.length > 0 ? String(Math.trunc(items[0].parsed.x)) : '',
                     label: (context) => {
                         const raw = context.raw || {};
                         const suffix = raw.benchmark && raw.n ? ` (${raw.n} institutions)` : '';
+                        const slope = context.dataset.isOutlook ? ` · slope ${formatSlope(context.dataset.slope, metric)}` : '';
+                        const label = context.dataset.isOutlook ? context.dataset.label.replace(' outlook', '') : context.dataset.label;
 
-                        return `${context.dataset.label}: ${formatValue(context.parsed.y, metric)}${suffix}`;
+                        return `${label}: ${formatValue(context.parsed.y, metric)}${suffix}${slope}`;
                     },
                 },
             },
@@ -696,6 +880,7 @@ function renderLineChart() {
             x: {
                 type: 'linear',
                 title: { display: true, text: 'Year' },
+                suggestedMax: latestYear && horizon > 0 ? latestYear + horizon : undefined,
                 ticks: { precision: 0, callback: (value) => String(Math.trunc(value)) },
             },
             y: {
@@ -705,8 +890,12 @@ function renderLineChart() {
         },
     };
 
+    chartOutlookNote.textContent = horizon > 0
+        ? `Dashed lines extend average slopes through ${latestYear + horizon}. Slope values appear in outlook tooltips and table rows.`
+        : 'Move the outlook slider to extend average slopes beyond the latest actual year.';
+
     if (!lineChart) {
-        lineChart = new Chart(document.getElementById('peerTrendLineChart'), { type: 'line', data, options });
+        lineChart = new Chart(document.getElementById('peerTrendLineChart'), { type: 'line', data, options, plugins: [outlookBoundaryPlugin] });
     } else {
         lineChart.data = data;
         lineChart.options = options;
@@ -861,6 +1050,10 @@ function updateStats() {
     document.getElementById('statPeerChangeLabel').textContent = `${peerLabel} Change`;
     document.getElementById('statPeerLatest').textContent = formatValue(focusLatest?.[metric.key], metric);
     document.getElementById('statPeerChange').textContent = formatChange(focusTrend?.absoluteChange, metric);
+    document.getElementById('statUconnLatestSlope').textContent = `Avg slope ${formatSlope(uconnTrend?.slope, metric)}`;
+    document.getElementById('statUconnChangeSlope').textContent = `Avg slope ${formatSlope(uconnTrend?.slope, metric)}`;
+    document.getElementById('statPeerLatestSlope').textContent = `Avg slope ${formatSlope(focusTrend?.slope, metric)}`;
+    document.getElementById('statPeerChangeSlope').textContent = `Avg slope ${formatSlope(focusTrend?.slope, metric)}`;
 }
 
 function renderBenchmarkSummary() {
@@ -909,13 +1102,99 @@ function renderComparisonTable() {
     comparisonSetBody.innerHTML = rows || '<tr><td colspan="5" class="text-muted">No institutions available for this comparison set.</td></tr>';
 }
 
+function outlookTargets(metric) {
+    const institutionTargets = visibleInstitutions().map((institution) => {
+        const latest = latestRow(institution);
+        const trend = trendRow(institution, metric.key);
+
+        return {
+            key: institution,
+            label: institution,
+            latest: latest?.[metric.key],
+            slope: trend?.slope,
+            type: institution === peerTrendData.uconn ? 'uconn' : 'institution',
+        };
+    });
+
+    const benchmarkTargets = enabledBenchmarks().map((bucket) => {
+        const trend = benchmarkTrend(bucket, metric);
+        const benchmark = peerTrendData.benchmarks?.[bucket] || { label: `${bucket} average` };
+
+        return {
+            key: bucket,
+            label: benchmark.label || `${bucket} average`,
+            latest: trend?.latest,
+            slope: trend?.slope,
+            type: 'benchmark',
+        };
+    });
+
+    return [...institutionTargets, ...benchmarkTargets];
+}
+
+function gapDirection(currentGap, projectedGap, metric) {
+    if (currentGap === null || projectedGap === null) {
+        return '';
+    }
+
+    const threshold = metric.isPercentMetric ? 0.1 : 1;
+    const currentDistance = Math.abs(currentGap);
+    const projectedDistance = Math.abs(projectedGap);
+    const movement = projectedDistance - currentDistance;
+
+    if (Math.abs(movement) <= threshold) {
+        return 'roughly unchanged';
+    }
+
+    return movement < 0 ? `narrows by ${formatGap(Math.abs(movement), metric).replace('+', '')}` : `widens by ${formatGap(Math.abs(movement), metric).replace('+', '')}`;
+}
+
+function renderOutlook() {
+    const metric = selectedMetric();
+    const horizon = outlookHorizon();
+    const targets = outlookTargets(metric);
+    const uconn = targets.find((target) => target.key === peerTrendData.uconn);
+    const uconnProjected = projectedValue(uconn?.latest, uconn?.slope, horizon, metric);
+    updateOutlookHorizonLabel();
+    projectedHeader.textContent = horizon === 0 ? 'Latest Actual' : `${horizon}-Year Outlook`;
+    outlookDescription.textContent = horizon === 0
+        ? `${metric.label}: latest actual value and average yearly slope.`
+        : `${metric.label}: latest value plus average yearly change for ${horizon} year${horizon === 1 ? '' : 's'}.`;
+
+    const rows = targets.map((target) => {
+        const projected = projectedValue(target.latest, target.slope, horizon, metric);
+        const currentGap = target.key === peerTrendData.uconn || target.latest === null || target.latest === undefined || uconn?.latest === null || uconn?.latest === undefined
+            ? null
+            : Number(target.latest) - Number(uconn.latest);
+        const projectedGap = target.key === peerTrendData.uconn || projected === null || uconnProjected === null
+            ? null
+            : projected - uconnProjected;
+        const direction = gapDirection(currentGap, projectedGap, metric);
+        const rowClass = target.type === 'uconn' ? 'comparison-row-uconn' : (target.type === 'benchmark' ? `outlook-row-${target.key.toLowerCase()}` : '');
+
+        return `
+            <tr class="${rowClass}">
+                <td>${target.label}</td>
+                <td class="text-end number-tabular">${formatValue(target.latest, metric)}</td>
+                <td class="text-end number-tabular">${formatSlope(target.slope, metric)}</td>
+                <td class="text-end number-tabular">${formatValue(projected, metric)}</td>
+                <td class="text-end number-tabular">${projectedGap === null ? '—' : `${formatGap(projectedGap, metric)} <span class="text-muted">${direction}</span>`}</td>
+            </tr>
+        `;
+    }).join('');
+
+    outlookBody.innerHTML = rows || '<tr><td colspan="5" class="text-muted">No outlook data available for this metric.</td></tr>';
+}
+
 function renderWorkspace() {
+    updateMetricDefinition();
     updateStats();
     renderBenchmarkSummary();
     renderLineChart();
     renderCurrentScatter();
     renderChangeScatter();
     renderComparisonTable();
+    renderOutlook();
 }
 
 if (metrics().length > 0) {
@@ -938,6 +1217,7 @@ if (metrics().length > 0) {
     });
     customFocusSelect.addEventListener('change', renderWorkspace);
     benchmarkToggleInputs.forEach((input) => input.addEventListener('change', renderWorkspace));
+    outlookHorizonSelect.addEventListener('change', renderWorkspace);
     setSelect.addEventListener('change', () => {
         updatePeerOptions();
         renderWorkspace();

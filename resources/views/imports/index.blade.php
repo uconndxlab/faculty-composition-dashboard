@@ -4,15 +4,6 @@
 
 @section('content')
 
-<div class="page-header">
-    <div>
-        <div class="page-kicker">Data Operations</div>
-        <h1 class="page-title">Imports</h1>
-        <p class="page-subtitle">Load IPEDS analytical data from local CSV exports and refresh the comparison workspace.</p>
-    </div>
-    <span class="metric-chip">storage/app/private/</span>
-</div>
-
 @if(session('status'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         {{ session('status') }}
@@ -27,14 +18,32 @@
     </div>
 @endif
 
-<div class="control-panel mb-4">
-    <form method="POST" action="{{ url('/imports/all') }}">
-        @csrf
-        <button type="submit" class="btn btn-primary">
-            Import All Datasets
+<div class="context-workspace peer-workspace imports-workspace">
+    <aside class="context-sidebar peer-sidebar imports-sidebar" aria-label="Import controls">
+        <button class="sidebar-collapse-toggle context-sidebar-toggle" type="button" data-context-sidebar-toggle aria-label="Collapse import controls">
+            ‹
         </button>
-    </form>
-</div>
+        <div class="context-sidebar-content">
+        <div class="context-sidebar-header">
+            <div class="page-kicker">Data Operations</div>
+            <h1 class="page-title">Imports</h1>
+            <p class="page-subtitle">Load IPEDS analytical data from local CSV exports and refresh the comparison workspace.</p>
+            <span class="metric-chip">storage/app/private/</span>
+        </div>
+        <div class="peer-sidebar-section">
+            <div class="peer-sidebar-heading">Bulk Refresh</div>
+            <p class="kpi-note mb-3">Run every importer against the local export files.</p>
+            <form method="POST" action="{{ url('/imports/all') }}">
+                @csrf
+                <button type="submit" class="btn btn-primary w-100">
+                    Import All Datasets
+                </button>
+            </form>
+        </div>
+        </div>
+    </aside>
+
+    <div class="context-main peer-main imports-main">
 
 <div class="row g-3 mb-4">
 
@@ -115,6 +124,9 @@
 
 <div class="panel-note rounded border">
     For MVP, imported files preserve the IR-provided analytical structure. Normalization can happen later if the dashboard needs cross-dataset joins beyond institution/year/metric.
+</div>
+
+    </div>
 </div>
 
 @endsection
