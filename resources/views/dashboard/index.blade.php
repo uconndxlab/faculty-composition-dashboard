@@ -170,8 +170,8 @@ const dashboardBenchmarkToggleInputs = [...document.querySelectorAll('.dashboard
 let currentCompositionMode = 'shares';
 const hiddenDashboardSeries = new Set();
 const dashboardBenchmarkStyles = {
-    R1: { label: 'R1 average', dash: [8, 5] },
-    R2: { label: 'R2 average', dash: [2, 6] },
+    R1: { label: 'R1 average', dash: [14, 5], outlookDash: [8, 4, 2, 4] },
+    R2: { label: 'R2 average', dash: [4, 4], outlookDash: [2, 4, 8, 4] },
 };
 
 const dashboardOutlookBoundaryPlugin = {
@@ -295,7 +295,8 @@ function dashboardBaseDatasetsForMode(mode) {
             ...dataset,
             label: `${style.label} ${dataset.label}`,
             borderDash: style.dash,
-            borderWidth: 2,
+            benchmarkOutlookDash: style.outlookDash,
+            borderWidth: 2.75,
             pointRadius: 1.5,
             sourceLabel: style.label,
             sourceKey: bucket,
@@ -327,8 +328,8 @@ function dashboardDatasetsForMode(mode) {
             ...dataset,
             label: `${dataset.label} outlook`,
             data: [...actualPadding, ...outlookValues],
-            borderDash: [3, 6],
-            borderWidth: 2,
+            borderDash: dataset.benchmarkOutlookDash || [3, 6],
+            borderWidth: dataset.isBenchmark ? 2.5 : 2,
             pointRadius: 0,
             isOutlook: true,
             seriesKey,

@@ -223,14 +223,14 @@ class DashboardController extends Controller
                         'label' => $label,
                         'modes' => [
                             'shares' => [
-                                $this->benchmarkDataset($bucketRows, $labels, 'Tenure-System Share', 'pct_tenure_system', '#7c3aed', 'percent'),
-                                $this->benchmarkDataset($bucketRows, $labels, 'Non-Tenure Share', 'pct_non_tenure', '#f97316', 'percent'),
-                                $this->benchmarkDataset($bucketRows, $labels, 'Total Faculty', 'total_faculty', '#0f172a', 'faculty'),
+                                $this->benchmarkDataset($bucketRows, $labels, 'Tenure-System Share', 'pct_tenure_system', '#0f172a', 'percent'),
+                                $this->benchmarkDataset($bucketRows, $labels, 'Non-Tenure Share', 'pct_non_tenure', '#a16207', 'percent'),
+                                $this->benchmarkDataset($bucketRows, $labels, 'Total Faculty', 'total_faculty', '#0891b2', 'faculty'),
                             ],
                             'counts' => [
-                                $this->benchmarkDataset($bucketRows, $labels, 'Tenure-System Count', 'tenure_system_total', '#7c3aed', 'faculty'),
-                                $this->benchmarkDataset($bucketRows, $labels, 'Non-Tenure Count', 'non_tenure_total', '#f97316', 'faculty'),
-                                $this->benchmarkDataset($bucketRows, $labels, 'Total Faculty', 'total_faculty', '#0f172a', 'faculty'),
+                                $this->benchmarkDataset($bucketRows, $labels, 'Tenure-System Count', 'tenure_system_total', '#0f172a', 'faculty'),
+                                $this->benchmarkDataset($bucketRows, $labels, 'Non-Tenure Count', 'non_tenure_total', '#a16207', 'faculty'),
+                                $this->benchmarkDataset($bucketRows, $labels, 'Total Faculty', 'total_faculty', '#0891b2', 'faculty'),
                             ],
                         ],
                     ],

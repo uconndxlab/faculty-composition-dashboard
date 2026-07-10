@@ -422,8 +422,8 @@ const workspaceColors = {
     focusFill: 'rgba(37, 99, 235, 0.75)',
     context: 'rgba(108, 117, 125, 0.45)',
     contextBorder: 'rgba(108, 117, 125, 0.8)',
-    R1: '#7c3aed',
-    R2: '#f97316',
+    R1: '#a21caf',
+    R2: '#0891b2',
 };
 
 const modeSelect = document.getElementById('comparisonMode');
@@ -806,6 +806,8 @@ function lineDatasets(metric) {
         const rows = benchmarkRows(bucket, metric);
         const trend = benchmarkTrend(bucket, metric);
         const seriesKey = `benchmark:${bucket}:${metric.key}`;
+        const historyDash = bucket === 'R2' ? [4, 4] : [14, 5];
+        const outlookDash = bucket === 'R2' ? [2, 4, 8, 4] : [8, 4, 2, 4];
 
         if (rows.length === 0) {
             return [];
@@ -821,8 +823,8 @@ function lineDatasets(metric) {
             })),
             borderColor: color,
             backgroundColor: color,
-            borderDash: [8, 5],
-            borderWidth: 2.25,
+            borderDash: historyDash,
+            borderWidth: 2.75,
             pointRadius: 2,
             tension: 0.25,
             spanGaps: true,
@@ -838,8 +840,8 @@ function lineDatasets(metric) {
             })),
             borderColor: color,
             backgroundColor: color,
-            borderDash: [2, 8],
-            borderWidth: 2,
+            borderDash: outlookDash,
+            borderWidth: 2.5,
             pointRadius: 0,
             tension: 0.2,
             spanGaps: true,
