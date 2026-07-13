@@ -15,6 +15,10 @@
     <p class="text-muted mb-0">This workspace shows the projected consequences of selected replacement and enrollment assumptions using sample IR model output. It is scenario modeling, not a statistical forecast.</p>
 </div>
 
+<div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+    <div><span class="fw-semibold">Notice:</span> Modeling is an experimental development stub. The scenarios shown here use generated sample data, not real institutional data.</div>
+</div>
+
 <form method="GET" action="{{ route('modeling.index') }}" class="card mb-4">
     <div class="card-header">
         <div class="fw-semibold">Scenario Assumptions</div>
