@@ -46,13 +46,6 @@
                 </div>
             </form>
             <div class="peer-sidebar-section">
-                <div class="form-label mb-2">Chart measure</div>
-                <div class="btn-group btn-group-sm w-100" role="group" aria-label="Chart measure">
-                    <button type="button" class="btn btn-outline-primary active" data-composition-mode="shares">Shares</button>
-                    <button type="button" class="btn btn-outline-primary" data-composition-mode="counts">Counts</button>
-                </div>
-            </div>
-            <div class="peer-sidebar-section">
                 <div class="form-label mb-2">Benchmarks</div>
                 <div class="d-grid gap-2">
                     <div class="form-check benchmark-check">
@@ -109,6 +102,9 @@
                     <div class="kpi-card">
                         <div class="kpi-label">{{ $card['label'] }}</div>
                         <div class="kpi-value">{{ $card['value'] }}</div>
+                        @if(! empty($card['detail']))
+                            <div class="kpi-detail">{{ $card['detail'] }}</div>
+                        @endif
                         <p class="kpi-note">{{ $card['description'] }}</p>
                     </div>
                 </div>
@@ -125,6 +121,9 @@
                     <div class="kpi-card">
                         <div class="kpi-label">{{ $card['label'] }}</div>
                         <div class="kpi-value">{{ $card['value'] }}</div>
+                        @if(! empty($card['detail']))
+                            <div class="kpi-detail">{{ $card['detail'] }}</div>
+                        @endif
                         <p class="kpi-note">{{ $card['description'] }}</p>
                     </div>
                 </div>
@@ -142,6 +141,13 @@
         <div class="fw-semibold">{{ $selectedInstitution }} Faculty Composition Over Time</div>
         <div class="text-muted small">Toggle between share and count views for tenure-system and non-tenure faculty. Total faculty remains visible for scale.</div>
         <div class="outlook-chart-note mt-2" id="dashboardOutlookNote">Move the outlook slider to extend average slopes beyond the latest actual year.</div>
+        </div>
+        <div class="chart-measure-control">
+            <div class="form-label mb-2">Chart measure</div>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Chart measure">
+                <button type="button" class="btn btn-outline-primary active" data-composition-mode="shares">Shares</button>
+                <button type="button" class="btn btn-outline-primary" data-composition-mode="counts">Counts</button>
+            </div>
         </div>
     </div>
     <div class="card-body">

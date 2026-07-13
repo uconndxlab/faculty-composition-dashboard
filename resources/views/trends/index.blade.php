@@ -70,11 +70,6 @@
             <p class="kpi-note">UConn is fixed. Add institutions and benchmarks to compare against it.</p>
         </div>
         <div class="peer-sidebar-section">
-            <label for="workspaceMetric" class="form-label">Metric</label>
-            <select id="workspaceMetric" class="form-select"></select>
-            <div class="metric-definition" id="metricDefinition">—</div>
-        </div>
-        <div class="peer-sidebar-section">
             <label for="comparisonMode" class="form-label">Institution source</label>
             <select id="comparisonMode" class="form-select">
                 <option value="custom">Choose institutions</option>
@@ -170,11 +165,18 @@
         </div>
 
         <div class="card chart-panel mb-4">
-            <div class="card-header">
-                <div class="fw-semibold">UConn vs Comparisons Over Time</div>
-                <div class="text-muted small">The selected metric is shown by year. UConn stays pinned while institutions and R1/R2 benchmarks provide context.</div>
-                <div class="benchmark-summary d-flex flex-wrap gap-2 mt-2" id="benchmarkSummary"></div>
-                <div class="outlook-chart-note mt-2" id="chartOutlookNote">Dashed lines extend average slopes beyond the latest actual year.</div>
+            <div class="card-header d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-start">
+                <div>
+                    <div class="fw-semibold">UConn vs Comparisons Over Time</div>
+                    <div class="text-muted small">The selected metric is shown by year. UConn stays pinned while institutions and R1/R2 benchmarks provide context.</div>
+                    <div class="benchmark-summary d-flex flex-wrap gap-2 mt-2" id="benchmarkSummary"></div>
+                    <div class="outlook-chart-note mt-2" id="chartOutlookNote">Dashed lines extend average slopes beyond the latest actual year.</div>
+                </div>
+                <div class="chart-measure-control trend-measure-control">
+                    <label for="workspaceMetric" class="form-label">Chart measure</label>
+                    <select id="workspaceMetric" class="form-select form-select-sm"></select>
+                    <div class="metric-definition mt-2" id="metricDefinition">—</div>
+                </div>
             </div>
             <div class="card-body">
                 <canvas id="peerTrendLineChart" height="120"></canvas>

@@ -85,16 +85,19 @@ class DashboardController extends Controller
             [
                 'label' => 'Total Faculty Change',
                 'value' => $this->formatTotalFacultyChange($latest, $history),
+                'detail' => $this->formatTotalFacultyCountChange($latest, $history),
                 'description' => 'Percent change in total faculty since the first available year.',
             ],
             [
                 'label' => 'Tenure-System Share',
                 'value' => $this->formatPercent($latest->pct_tenure_system),
+                'detail' => $this->formatCountShare($latest->tenure_system_total, $latest->total_faculty),
                 'description' => 'Share of faculty who are tenured or tenure-track.',
             ],
             [
                 'label' => 'Non-Tenure Share',
                 'value' => $this->formatPercent($latest->pct_non_tenure),
+                'detail' => $this->formatCountShare($latest->non_tenure_total, $latest->total_faculty),
                 'description' => 'Share of faculty outside the tenure system.',
             ],
         ];
@@ -106,21 +109,25 @@ class DashboardController extends Controller
             [
                 'label' => 'Assistant Professor Share',
                 'value' => $this->formatPercent($latest->pct_assistant_professor),
+                'detail' => $this->formatCountShare($latest->assistant_professor_total, $latest->total_faculty),
                 'description' => 'Rank/title share across all tenure statuses.',
             ],
             [
                 'label' => 'Associate Professor Share',
                 'value' => $this->formatPercent($latest->pct_associate_professor),
+                'detail' => $this->formatCountShare($latest->associate_professor_total, $latest->total_faculty),
                 'description' => 'Rank/title share across all tenure statuses.',
             ],
             [
                 'label' => 'Full Professor Share',
                 'value' => $this->formatPercent($latest->pct_professor),
+                'detail' => $this->formatCountShare($latest->professor_total, $latest->total_faculty),
                 'description' => 'Rank/title share across all tenure statuses.',
             ],
             [
                 'label' => 'Senior Faculty Share',
                 'value' => $this->formatPercent($latest->pct_senior_faculty),
+                'detail' => $this->formatCountShare($latest->senior_faculty_total, $latest->total_faculty),
                 'description' => 'Combined associate and full professor titles, regardless of tenure status.',
             ],
         ];
@@ -288,6 +295,21 @@ class DashboardController extends Controller
         return $value !== null ? number_format((float) $value * 100, 1) . '%' : '—';
     }
 
+    private function formatCountShare($count, $total): string
+    {
+        if ($count === null) {
+            return 'Count unavailable';
+        }
+
+        $detail = number_format((float) $count) . ' faculty';
+
+        if ($total !== null && (float) $total > 0) {
+            $detail .= ' of ' . number_format((float) $total);
+        }
+
+        return $detail;
+    }
+
     private function formatTotalFacultyChange(FacultySummary $latest, $history): string
     {
         $first = $history
@@ -304,5 +326,23 @@ class DashboardController extends Controller
         $sign = $change > 0 ? '+' : '';
 
         return $sign . number_format($change, 1) . '%';
+    }
+
+    private function formatTotalFacultyCountChange(FacultySummary $latest, $history): string
+    {
+        $first = $history
+            ->where('year', '<=', $latest->year)
+            ->filter(fn($row) => $row->total_faculty !== null)
+            ->sortBy('year')
+            ->first();
+
+        if (! $first || $latest->total_faculty === null) {
+            return 'Count change unavailable';
+        }
+
+        $change = (float) $latest->total_faculty - (float) $first->total_faculty;
+        $sign = $change > 0 ? '+' : '';
+
+        return $sign . number_format($change) . ' faculty since ' . $first->year;
     }
 }

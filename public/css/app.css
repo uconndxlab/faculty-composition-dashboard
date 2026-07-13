@@ -438,6 +438,15 @@ body.app-sidebar-collapsed .page-frame {
     font-weight: 600;
 }
 
+.chart-measure-control {
+    flex: 0 0 auto;
+    min-width: 12rem;
+}
+
+.trend-measure-control {
+    width: min(100%, 18rem);
+}
+
 .form-select:focus,
 .form-control:focus {
     border-color: var(--brand-accent);
@@ -607,6 +616,14 @@ body.app-sidebar-collapsed .page-frame {
     font-weight: 800;
     line-height: 1;
     margin-bottom: 0.45rem;
+}
+
+.kpi-detail {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
 }
 
 .kpi-note {
