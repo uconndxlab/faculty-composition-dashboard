@@ -377,6 +377,7 @@
                     <th>Trajectory Rank</th>
                     <th>Institution</th>
                     <th>Sector</th>
+                    <th class="text-end">US News Public Rank</th>
                     <th class="text-end">Distance</th>
                     <th class="text-end">Shared Metrics</th>
                     <th class="text-end">Non-Tenure Slope</th>
@@ -390,6 +391,7 @@
                     <td class="number-tabular">{{ $row->trajectory_similarity_rank }}</td>
                     <td>{{ $row->institution }}</td>
                     <td>{{ $row->sector }}</td>
+                    <td class="text-end number-tabular">{{ $usNewsRanks->get($row->unitid) ?? '—' }}</td>
                     <td class="text-end number-tabular">{{ $row->trajectory_distance_from_uconn !== null ? number_format((float) $row->trajectory_distance_from_uconn, 4) : '—' }}</td>
                     <td class="text-end number-tabular">{{ $row->n_shared_trajectory_metrics }}</td>
                     <td class="text-end number-tabular">{{ $row->slope_pct_non_tenure !== null ? number_format((float) $row->slope_pct_non_tenure * 100, 2) . ' pp/yr' : '—' }}</td>

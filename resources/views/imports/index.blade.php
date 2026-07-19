@@ -139,6 +139,25 @@
         </div>
     </div>
 
+    {{-- Institutional Rankings --}}
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header card-header-brand d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Institutional Rankings</span>
+                <span class="badge bg-light text-dark number-tabular">{{ number_format($counts['institutional_rankings']) }} rows</span>
+            </div>
+            <div class="card-body">
+                <p class="small mb-1">Table: <code>institutional_rankings</code></p>
+                <p class="small text-muted mb-1">File: <code>I3_Ranking_2026(Dataset).csv</code></p>
+                <p class="small text-muted mb-3">Column <code>ipeds_id</code> &rarr; <code>unitid</code>. Curated subset of metrics imported.</p>
+                <form method="POST" action="{{ url('/imports/institutional-rankings') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Import</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <div class="panel-note rounded border">

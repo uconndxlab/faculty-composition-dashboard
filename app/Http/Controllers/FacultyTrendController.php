@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FacultySummary;
 use App\Models\FacultyTrend;
+use App\Models\InstitutionalRanking;
 use App\Models\SimilarityRanking;
 use App\Models\TrajectorySimilarity;
 use Illuminate\Support\Collection;
@@ -115,8 +116,9 @@ class FacultyTrendController extends Controller
             $trendExplorerData = [];
             $peerTrendData = $this->emptyPeerTrendData($metricLabels, $rankDimensions);
             $trajectories = collect();
+            $usNewsRanks = collect();
 
-            return view('trends.index', compact('trends', 'metricLabels', 'changeChartData', 'comparisonInstitutions', 'trendExplorerData', 'peerTrendData', 'trajectories', 'rankDimensions'));
+            return view('trends.index', compact('trends', 'metricLabels', 'changeChartData', 'comparisonInstitutions', 'trendExplorerData', 'peerTrendData', 'trajectories', 'rankDimensions', 'usNewsRanks'));
         }
 
         $uconnSummaries = Schema::hasTable('faculty_summaries')
@@ -156,7 +158,13 @@ class FacultyTrendController extends Controller
         $trendExplorerData = $this->buildTrendExplorerData($metricLabels, $comparisonInstitutions);
         $peerTrendData = $this->buildPeerTrendData($metricLabels, $rankDimensions, $trajectories);
 
-        return view('trends.index', compact('trends', 'metricLabels', 'changeChartData', 'comparisonInstitutions', 'trendExplorerData', 'peerTrendData', 'trajectories', 'rankDimensions'));
+        $usNewsRanks = Schema::hasTable('institutional_rankings')
+            ? InstitutionalRanking::whereNotNull('unitid')
+                ->whereNotNull('top_public_rank_nat_univ')
+                ->pluck('top_public_rank_nat_univ', 'unitid')
+            : collect();
+
+        return view('trends.index', compact('trends', 'metricLabels', 'changeChartData', 'comparisonInstitutions', 'trendExplorerData', 'peerTrendData', 'trajectories', 'rankDimensions', 'usNewsRanks'));
     }
 
     private function metricLabels(): array

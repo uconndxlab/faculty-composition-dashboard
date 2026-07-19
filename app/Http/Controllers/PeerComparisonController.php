@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FacultySummary;
+use App\Models\InstitutionalRanking;
 use App\Models\SimilarityRanking;
 use App\Models\TrajectorySimilarity;
 use Illuminate\Support\Facades\Schema;
@@ -60,7 +61,13 @@ class PeerComparisonController extends Controller
                 ->get()
             : collect();
 
-        return view('peers.index', compact('rankDimensions', 'rankings', 'trajectories', 'latestYear', 'explorerData'));
+        $usNewsRanks = Schema::hasTable('institutional_rankings')
+            ? InstitutionalRanking::whereNotNull('unitid')
+                ->whereNotNull('top_public_rank_nat_univ')
+                ->pluck('top_public_rank_nat_univ', 'unitid')
+            : collect();
+
+        return view('peers.index', compact('rankDimensions', 'rankings', 'trajectories', 'latestYear', 'explorerData', 'usNewsRanks'));
     }
 
     private function buildExplorerData(array $rankDimensions, ?int $latestYear): array

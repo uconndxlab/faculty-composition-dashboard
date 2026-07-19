@@ -115,6 +115,7 @@
                                 <th>Sector</th>
                                 <th>Carnegie Classification</th>
                                 <th class="text-end">Total Faculty</th>
+                                <th class="text-end">US News Public Rank</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -125,6 +126,7 @@
                                     <td>{{ $peer->sector }}</td>
                                     <td>{{ $peer->carnegie_classification }}</td>
                                     <td class="text-end">{{ number_format($peer->total_faculty) }}</td>
+                                    <td class="text-end number-tabular">{{ $usNewsRanks->get($peer->unitid) ?? '—' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -149,6 +151,7 @@
                     <th>Institution</th>
                     <th>Sector</th>
                     <th>Carnegie Classification</th>
+                    <th class="text-end">US News Public Rank</th>
                     <th class="text-end">Distance</th>
                     <th class="text-end">Shared Metrics</th>
                     <th class="text-end">Non-Tenure Slope</th>
@@ -163,6 +166,7 @@
                         <td>{{ $row->institution }}</td>
                         <td>{{ $row->sector }}</td>
                         <td>{{ $row->carnegie_classification }}</td>
+                        <td class="text-end number-tabular">{{ $usNewsRanks->get($row->unitid) ?? '—' }}</td>
                         <td class="text-end">{{ $row->trajectory_distance_from_uconn !== null ? number_format((float) $row->trajectory_distance_from_uconn, 4) : '—' }}</td>
                         <td class="text-end">{{ $row->n_shared_trajectory_metrics }}</td>
                         <td class="text-end">{{ $row->slope_pct_non_tenure !== null ? number_format((float) $row->slope_pct_non_tenure * 100, 2) . ' pp/yr' : '—' }}</td>
