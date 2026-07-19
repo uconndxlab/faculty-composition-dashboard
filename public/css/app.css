@@ -645,6 +645,19 @@ body.app-sidebar-collapsed .page-frame {
     padding: 0.3rem 0.65rem;
 }
 
+.rank-badge {
+    align-items: center;
+    background: #1e293b;
+    border-radius: 999px;
+    color: #f1f5f9;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0.2rem 0.6rem;
+    vertical-align: middle;
+}
+
 .visual-key-item {
     align-items: center;
     color: var(--text-secondary);
@@ -804,6 +817,29 @@ body.app-sidebar-collapsed .page-frame {
     font-size: 0.82rem;
     font-weight: 700;
     padding: 0.35rem 0.55rem;
+}
+
+/* Inline stat strip inside chart card header */
+.stat-strip {
+    align-items: baseline;
+}
+.stat-strip-item {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.stat-strip-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    margin-right: 0.2em;
+}
+.stat-strip-value {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
 }
 
 .dashboard-outlook-control {

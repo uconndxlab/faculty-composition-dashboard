@@ -319,6 +319,12 @@ class FacultyTrendController extends Controller
             ->groupBy('institution');
         $trendRows = $this->trendsWithSummaryFallback($trendRows, $summaryRows->groupBy('institution'));
 
+        // Profile mode data — UConn historical series + per-year KPI snapshots
+        $uconnRows = $summaryRows->where('institution', self::UCONN)->sortBy('year')->values();
+        $allYears = $uconnRows->pluck('year')->filter()->sort()->values()->toArray();
+        $latestByYear = $uconnRows->keyBy('year')->map(fn($row) => $this->summaryForProfile($row))->toArray();
+        $profileSeries = $this->buildProfileSeries($uconnRows);
+
         return [
             'uconn' => self::UCONN,
             'latestYear' => $latestYear,
@@ -336,6 +342,9 @@ class FacultyTrendController extends Controller
                 return $institutionRows->keyBy('metric')->map(fn($row) => $this->trendForExplorer($row))->toArray();
             })->toArray(),
             'institutionProfiles' => $institutionProfiles,
+            'allYears' => $allYears,
+            'latestByYear' => $latestByYear,
+            'profileSeries' => $profileSeries,
         ];
     }
 
@@ -603,6 +612,53 @@ class FacultyTrendController extends Controller
         ];
     }
 
+    private function summaryForProfile(FacultySummary $summary): array
+    {
+        $pct = fn($v) => $v !== null ? round((float) $v * 100, 2) : null;
+
+        return [
+            'year' => (int) $summary->year,
+            'total_faculty' => $summary->total_faculty !== null ? (int) $summary->total_faculty : null,
+            'tenure_system_total' => $summary->tenure_system_total !== null ? (int) $summary->tenure_system_total : null,
+            'non_tenure_total' => $summary->non_tenure_total !== null ? (int) $summary->non_tenure_total : null,
+            'pct_tenure_system' => $pct($summary->pct_tenure_system),
+            'pct_non_tenure' => $pct($summary->pct_non_tenure),
+            'pct_assistant_professor' => $pct($summary->pct_assistant_professor),
+            'pct_associate_professor' => $pct($summary->pct_associate_professor),
+            'pct_professor' => $pct($summary->pct_professor),
+            'pct_senior_faculty' => $pct($summary->pct_senior_faculty),
+        ];
+    }
+
+    private function buildProfileSeries(Collection $uconnRows): array
+    {
+        $pct = fn($v) => $v !== null ? round((float) $v * 100, 2) : null;
+
+        $points = $uconnRows->map(fn(FacultySummary $row) => [
+            'year' => (int) $row->year,
+            'pct_tenure_system' => $pct($row->pct_tenure_system),
+            'pct_non_tenure' => $pct($row->pct_non_tenure),
+            'tenure_system_total' => $row->tenure_system_total !== null ? (int) $row->tenure_system_total : null,
+            'non_tenure_total' => $row->non_tenure_total !== null ? (int) $row->non_tenure_total : null,
+            'total_faculty' => $row->total_faculty !== null ? (int) $row->total_faculty : null,
+        ])->values()->toArray();
+
+        return [
+            'labels' => array_column($points, 'year'),
+            'shares' => [
+                ['label' => 'Tenure-System Share', 'key' => 'pct_tenure_system', 'color' => '#0d6efd', 'yAxis' => 'percent'],
+                ['label' => 'Non-Tenure Share', 'key' => 'pct_non_tenure', 'color' => '#dc3545', 'yAxis' => 'percent'],
+                ['label' => 'Total Faculty', 'key' => 'total_faculty', 'color' => '#198754', 'yAxis' => 'faculty'],
+            ],
+            'counts' => [
+                ['label' => 'Tenure-System Count', 'key' => 'tenure_system_total', 'color' => '#0d6efd', 'yAxis' => 'faculty'],
+                ['label' => 'Non-Tenure Count', 'key' => 'non_tenure_total', 'color' => '#dc3545', 'yAxis' => 'faculty'],
+                ['label' => 'Total Faculty', 'key' => 'total_faculty', 'color' => '#198754', 'yAxis' => 'faculty'],
+            ],
+            'points' => $points,
+        ];
+    }
+
     private function emptyPeerTrendData(array $metricLabels, array $rankDimensions): array
     {
         return [
@@ -651,6 +707,10 @@ class FacultyTrendController extends Controller
             'series' => [],
             'latest' => [],
             'trends' => [],
+            'institutionProfiles' => [],
+            'allYears' => [],
+            'latestByYear' => [],
+            'profileSeries' => ['labels' => [], 'shares' => [], 'counts' => [], 'points' => []],
         ];
     }
 

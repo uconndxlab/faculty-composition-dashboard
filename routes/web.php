@@ -8,8 +8,9 @@ use App\Http\Controllers\FacultyRosterController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\ModelingController;
 
-Route::get('/', [DashboardController::class, 'index']);
-Route::get('/trends', [FacultyTrendController::class, 'index']);
+Route::get('/', [FacultyTrendController::class, 'index'])->name('workspace');
+Route::redirect('/trends', '/');
+Route::redirect('/dashboard', '/');
 Route::redirect('/peers', '/trends');
 Route::get('/scenario', [ScenarioController::class, 'index']);
 Route::get('/faculty', [FacultyRosterController::class, 'index']);
