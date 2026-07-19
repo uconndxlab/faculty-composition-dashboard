@@ -175,9 +175,9 @@ class FacultyTrendController extends Controller
                 'description' => 'Best default peer list. Blends multiple similarity approaches so the result is broad enough to be useful and still explainable.',
             ],
             'nine_d' => [
-                'label' => '9D Similarity',
-                'column' => 'nine_d_similarity_rank',
-                'description' => 'Compares the full faculty composition profile across nine rank-by-tenure dimensions. Most complete, but hardest to visualize directly.',
+                'label' => 'Detailed Cell Similarity',
+                'column' => 'detailed_cell_similarity_rank',
+                'description' => 'Compares the full faculty composition profile across detailed cell dimensions (tenure-status × rank). This replaces the prior 9D approach and is more granular.',
             ],
             'tenure' => [
                 'label' => 'Tenure-System',

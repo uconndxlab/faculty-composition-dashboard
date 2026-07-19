@@ -24,6 +24,24 @@ return new class extends Migration
             $table->decimal('slope_pct_tenure_system', 18, 9)->nullable();
             $table->decimal('slope_pct_tenured', 18, 9)->nullable();
             $table->decimal('pct_change_total_faculty', 18, 9)->nullable();
+            // Additional slope columns
+            $table->decimal('slope_pct_assistant_professor', 18, 9)->nullable();
+            $table->decimal('slope_pct_associate_professor', 18, 9)->nullable();
+            $table->decimal('slope_pct_professor', 18, 9)->nullable();
+            $table->decimal('slope_pct_senior_faculty', 18, 9)->nullable();
+            $table->decimal('slope_ugrds_per_faculty', 18, 9)->nullable();
+            // Latest-year totals
+            $table->integer('tenure_system_total')->nullable();
+            $table->integer('non_tenure_total')->nullable();
+            $table->integer('senior_faculty_total')->nullable();
+            $table->decimal('ugrd_fte', 18, 9)->nullable();
+            $table->decimal('grad_fte', 18, 9)->nullable();
+            // Period-change deltas
+            $table->decimal('tenure_system_total_delta', 18, 9)->nullable();
+            $table->decimal('non_tenure_total_delta', 18, 9)->nullable();
+            $table->decimal('senior_faculty_total_delta', 18, 9)->nullable();
+            $table->decimal('ugrd_fte_delta', 18, 9)->nullable();
+            $table->decimal('grad_fte_delta', 18, 9)->nullable();
             $table->timestamps();
         });
     }

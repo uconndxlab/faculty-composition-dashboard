@@ -4,18 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\FacultySummary;
 use App\Models\FacultyTrend;
+use App\Models\ForecastingOutput;
 use App\Models\SimilarityRanking;
 use App\Models\TrajectorySimilarity;
 use Illuminate\Support\Facades\DB;
 
 class ImportController extends Controller
 {
-    // Actual filenames on disk (parentheses, not a subdirectory)
     private const FILES = [
-        'faculty_summary'       => 'faculty_exports_20260706_200639(faculty_summary).csv',
-        'faculty_trends'        => 'faculty_exports_20260706_200639(faculty_trends).csv',
-        'similarity_ranks'      => 'faculty_exports_20260706_200639(similarity_ranks).csv',
-        'trajectory_similarity' => 'faculty_exports_20260706_200639(trajectory_similarity).csv',
+        'faculty_summary'       => 'Faculty Hiring Policy IPEDS comparison and Model(Faculty Summary).csv',
+        'faculty_trends'        => 'Faculty Hiring Policy IPEDS comparison and Model(Faculty Trends).csv',
+        'similarity_ranks'      => 'Faculty Hiring Policy IPEDS comparison and Model(Similarity Ranking).csv',
+        'trajectory_similarity' => 'Faculty Hiring Policy IPEDS comparison and Model(Trajectory).csv',
+        'forecasting'           => 'Faculty Hiring Policy IPEDS comparison and Model(Forecasting).csv',
     ];
 
     public function index()
@@ -25,6 +26,7 @@ class ImportController extends Controller
             'faculty_trends'          => FacultyTrend::count(),
             'similarity_rankings'     => SimilarityRanking::count(),
             'trajectory_similarities' => TrajectorySimilarity::count(),
+            'forecasting_outputs'     => ForecastingOutput::count(),
         ];
 
         return view('imports.index', compact('counts'));
@@ -62,7 +64,10 @@ class ImportController extends Controller
             $count = $this->importRows(
                 SimilarityRanking::class,
                 $this->csvPath('similarity_ranks'),
-                ['9d_similarity_rank' => 'nine_d_similarity_rank']
+                [
+                    '9d_similarity_rank' => 'nine_d_similarity_rank',
+                    '9d_rank_pct'        => 'nine_d_rank_pct',
+                ]
             );
             return back()->with('status', 'Imported ' . $this->fmt($count) . ' similarity ranking rows.');
         } catch (\Throwable $e) {
@@ -83,15 +88,35 @@ class ImportController extends Controller
         }
     }
 
+    public function importForecastingOutputs()
+    {
+        try {
+            $count = $this->importRows(
+                ForecastingOutput::class,
+                $this->csvPath('forecasting')
+            );
+            return back()->with('status', 'Imported ' . $this->fmt($count) . ' forecasting rows.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Forecasting import failed: ' . $e->getMessage());
+        }
+    }
+
     public function importAll()
     {
         try {
             $counts = [];
             $counts[] = $this->importRows(FacultySummary::class,     $this->csvPath('faculty_summary'));
             $counts[] = $this->importRows(FacultyTrend::class,        $this->csvPath('faculty_trends'));
-            $counts[] = $this->importRows(SimilarityRanking::class,   $this->csvPath('similarity_ranks'),
-                            ['9d_similarity_rank' => 'nine_d_similarity_rank']);
+            $counts[] = $this->importRows(
+                SimilarityRanking::class,
+                $this->csvPath('similarity_ranks'),
+                [
+                    '9d_similarity_rank' => 'nine_d_similarity_rank',
+                    '9d_rank_pct'        => 'nine_d_rank_pct',
+                ]
+            );
             $counts[] = $this->importRows(TrajectorySimilarity::class, $this->csvPath('trajectory_similarity'));
+            $counts[] = $this->importRows(ForecastingOutput::class,    $this->csvPath('forecasting'));
 
             $total = array_sum($counts);
             return back()->with('status', 'Import All complete — ' . $this->fmt($total) . ' total rows imported.');

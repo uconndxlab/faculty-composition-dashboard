@@ -63,6 +63,22 @@ return new class extends Migration
             $table->decimal('assistant_to_senior_ratio', 18, 9)->nullable();
             $table->decimal('pct_tenure_sum', 18, 9)->nullable();
             $table->decimal('pct_rank_sum', 18, 9)->nullable();
+            // Ranked (tenure-system only) counts and percentages
+            $table->integer('rank_total')->nullable();
+            $table->decimal('pct_professor_ranked', 18, 9)->nullable();
+            $table->decimal('pct_associate_professor_ranked', 18, 9)->nullable();
+            $table->decimal('pct_assistant_professor_ranked', 18, 9)->nullable();
+            // Student enrollment
+            $table->integer('ft_ugrd')->nullable();
+            $table->integer('pt_ugrd')->nullable();
+            $table->integer('ugrd_total')->nullable();
+            $table->decimal('ugrd_fte', 18, 9)->nullable();
+            $table->integer('grad_total')->nullable();
+            $table->decimal('grad_fte', 18, 9)->nullable();
+            // Student-to-faculty ratios
+            $table->decimal('ugrds_per_faculty', 18, 9)->nullable();
+            $table->decimal('grads_per_tenure_system', 18, 9)->nullable();
+            $table->decimal('indexed_total_faculty', 18, 9)->nullable();
             $table->timestamps();
         });
     }

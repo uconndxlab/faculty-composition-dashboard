@@ -19,4 +19,5 @@ Route::post('/imports/faculty-summary', [ImportController::class, 'importFaculty
 Route::post('/imports/faculty-trends', [ImportController::class, 'importFacultyTrends']);
 Route::post('/imports/similarity-rankings', [ImportController::class, 'importSimilarityRankings']);
 Route::post('/imports/trajectory-similarities', [ImportController::class, 'importTrajectorySimilarities']);
+Route::post('/imports/forecasting', [ImportController::class, 'importForecastingOutputs']);
 Route::post('/imports/all', [ImportController::class, 'importAll']);

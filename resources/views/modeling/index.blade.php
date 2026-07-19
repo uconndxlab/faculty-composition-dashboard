@@ -12,12 +12,14 @@
 
 <div class="mb-4">
     <h1 class="h3">Modeling</h1>
-    <p class="text-muted mb-0">This workspace shows the projected consequences of selected replacement and enrollment assumptions using sample IR model output. It is scenario modeling, not a statistical forecast.</p>
+    <p class="text-muted mb-0">This workspace shows the projected consequences of selected replacement and enrollment assumptions using precomputed IR model outputs. It is scenario modeling, not a statistical forecast.</p>
 </div>
 
-<div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
-    <div><span class="fw-semibold">Notice:</span> Modeling is an experimental development stub. The scenarios shown here use generated sample data, not real institutional data.</div>
-</div>
+@if(empty($parameterOptions))
+    <div class="alert alert-warning">
+        No forecasting data found. Visit <a href="{{ url('/imports') }}">Imports</a> and run <strong>Import All Datasets</strong> to load data.
+    </div>
+@else
 
 <form method="GET" action="{{ route('modeling.index') }}" class="card mb-4">
     <div class="card-header">
@@ -26,10 +28,10 @@
     <div class="card-body">
         <div class="row g-3 align-items-end">
             <div class="col-md-4">
-                <label for="ntt_per_tt_loss" class="form-label">NTT added per Tenure-System faculty lost</label>
+                <label for="ntt_per_tt_loss" class="form-label">NTT per Tenure-System replacement measure</label>
                 <select id="ntt_per_tt_loss" name="ntt_per_tt_loss" class="form-select">
                     @foreach($parameterOptions['ntt_per_tt_loss'] as $value)
-                        <option value="{{ $value }}" {{ (float) $selected['ntt_per_tt_loss'] === (float) $value ? 'selected' : '' }}>{{ $formatDecimal($value) }}</option>
+                        <option value="{{ $value }}" {{ abs((float) $selected['ntt_per_tt_loss'] - (float) $value) < 1e-9 ? 'selected' : '' }}>{{ $formatDecimal($value) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -37,7 +39,7 @@
                 <label for="student_growth_rate" class="form-label">Student body growth rate</label>
                 <select id="student_growth_rate" name="student_growth_rate" class="form-select">
                     @foreach($parameterOptions['student_growth_rate'] as $value)
-                        <option value="{{ $value }}" {{ (float) $selected['student_growth_rate'] === (float) $value ? 'selected' : '' }}>{{ $formatPercent($value) }}</option>
+                        <option value="{{ $value }}" {{ abs((float) $selected['student_growth_rate'] - (float) $value) < 1e-9 ? 'selected' : '' }}>{{ $formatPercent($value) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -45,7 +47,7 @@
                 <label for="replacement_rate" class="form-label">Tenure-System replacement rate</label>
                 <select id="replacement_rate" name="replacement_rate" class="form-select">
                     @foreach($parameterOptions['replacement_rate'] as $value)
-                        <option value="{{ $value }}" {{ (float) $selected['replacement_rate'] === (float) $value ? 'selected' : '' }}>{{ $formatPercent($value) }}</option>
+                        <option value="{{ $value }}" {{ abs((float) $selected['replacement_rate'] - (float) $value) < 1e-9 ? 'selected' : '' }}>{{ $formatPercent($value) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -134,9 +136,11 @@
     </div>
 @endif
 
+@endif
+
 @endsection
 
-@if($rows->isNotEmpty())
+@if(! empty($parameterOptions) && $rows->isNotEmpty())
 @push('scripts')
 <script>
 const modelingData = @json($chartData);

@@ -57,7 +57,7 @@
             </div>
             <div class="card-body">
                 <p class="small mb-1">Table: <code>faculty_summaries</code></p>
-                <p class="small text-muted mb-3">File: <code>faculty_exports_20260706_200639(faculty_summary).csv</code></p>
+                <p class="small text-muted mb-3">File: <code>Faculty Hiring Policy IPEDS comparison and Model(Faculty Summary).csv</code></p>
                 <form method="POST" action="{{ url('/imports/faculty-summary') }}">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-outline-primary">Import</button>
@@ -75,7 +75,7 @@
             </div>
             <div class="card-body">
                 <p class="small mb-1">Table: <code>faculty_trends</code></p>
-                <p class="small text-muted mb-3">File: <code>faculty_exports_20260706_200639(faculty_trends).csv</code></p>
+                <p class="small text-muted mb-3">File: <code>Faculty Hiring Policy IPEDS comparison and Model(Faculty Trends).csv</code></p>
                 <form method="POST" action="{{ url('/imports/faculty-trends') }}">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-outline-primary">Import</button>
@@ -93,8 +93,8 @@
             </div>
             <div class="card-body">
                 <p class="small mb-1">Table: <code>similarity_rankings</code></p>
-                <p class="small text-muted mb-1">File: <code>faculty_exports_20260706_200639(similarity_ranks).csv</code></p>
-                <p class="small text-muted mb-3">Column <code>9d_similarity_rank</code> &rarr; <code>nine_d_similarity_rank</code></p>
+                <p class="small text-muted mb-1">File: <code>Faculty Hiring Policy IPEDS comparison and Model(Similarity Ranking).csv</code></p>
+                <p class="small text-muted mb-3">Columns <code>9d_similarity_rank</code> &rarr; <code>nine_d_similarity_rank</code>, <code>9d_rank_pct</code> &rarr; <code>nine_d_rank_pct</code></p>
                 <form method="POST" action="{{ url('/imports/similarity-rankings') }}">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-outline-primary">Import</button>
@@ -112,8 +112,26 @@
             </div>
             <div class="card-body">
                 <p class="small mb-1">Table: <code>trajectory_similarities</code></p>
-                <p class="small text-muted mb-3">File: <code>faculty_exports_20260706_200639(trajectory_similarity).csv</code></p>
+                <p class="small text-muted mb-3">File: <code>Faculty Hiring Policy IPEDS comparison and Model(Trajectory).csv</code></p>
                 <form method="POST" action="{{ url('/imports/trajectory-similarities') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Import</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Forecasting --}}
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header card-header-brand d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Forecasting</span>
+                <span class="badge bg-light text-dark number-tabular">{{ number_format($counts['forecasting_outputs']) }} rows</span>
+            </div>
+            <div class="card-body">
+                <p class="small mb-1">Table: <code>forecasting_outputs</code></p>
+                <p class="small text-muted mb-3">File: <code>Faculty Hiring Policy IPEDS comparison and Model(Forecasting).csv</code></p>
+                <form method="POST" action="{{ url('/imports/forecasting') }}">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-outline-primary">Import</button>
                 </form>
@@ -124,7 +142,7 @@
 </div>
 
 <div class="panel-note rounded border">
-    For MVP, imported files preserve the IR-provided analytical structure. Normalization can happen later if the dashboard needs cross-dataset joins beyond institution/year/metric.
+    Imported files preserve the IR-provided analytical structure. The Forecasting dataset powers the Modeling page scenario explorer.
 </div>
 
     </div>

@@ -57,5 +57,18 @@ class FacultySummary extends Model
         'assistant_to_senior_ratio',
         'pct_tenure_sum',
         'pct_rank_sum',
+        'rank_total',
+        'pct_professor_ranked',
+        'pct_associate_professor_ranked',
+        'pct_assistant_professor_ranked',
+        'ft_ugrd',
+        'pt_ugrd',
+        'ugrd_total',
+        'ugrd_fte',
+        'grad_total',
+        'grad_fte',
+        'ugrds_per_faculty',
+        'grads_per_tenure_system',
+        'indexed_total_faculty',
     ];
 }
