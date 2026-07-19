@@ -121,6 +121,8 @@ class FacultyTrendController extends Controller
             return view('trends.index', compact('trends', 'metricLabels', 'changeChartData', 'comparisonInstitutions', 'trendExplorerData', 'peerTrendData', 'trajectories', 'rankDimensions', 'usNewsRanks'));
         }
 
+        $institutionProfiles = [];
+
         $uconnSummaries = Schema::hasTable('faculty_summaries')
             ? FacultySummary::where('institution', self::UCONN)->orderBy('year')->get()
             : collect();
@@ -156,7 +158,23 @@ class FacultyTrendController extends Controller
         ])->values();
 
         $trendExplorerData = $this->buildTrendExplorerData($metricLabels, $comparisonInstitutions);
-        $peerTrendData = $this->buildPeerTrendData($metricLabels, $rankDimensions, $trajectories);
+
+        $institutionProfiles = Schema::hasTable('institutional_rankings')
+            ? InstitutionalRanking::whereNotNull('unitid')->get()
+                ->mapWithKeys(fn($r) => [(string) $r->unitid => [
+                    'unitid' => $r->unitid,
+                    'rank' => $r->top_public_rank_nat_univ,
+                    'grad_rate' => $r->grad_rate_6yr_cohort !== null ? (float) $r->grad_rate_6yr_cohort : null,
+                    'grad_rate_pell' => $r->grad_rate_6yr_pell !== null ? (float) $r->grad_rate_6yr_pell : null,
+                    'retention_rate' => $r->firstyr_retention_rate !== null ? (float) $r->firstyr_retention_rate : null,
+                    'acceptance_rate' => $r->acceptance_rate !== null ? (float) $r->acceptance_rate : null,
+                    'avg_faculty_salary' => $r->avg_faculty_salary !== null ? (float) $r->avg_faculty_salary : null,
+                    'student_faculty_ratio' => $r->student_faculty_ratio !== null ? (float) $r->student_faculty_ratio : null,
+                ]])
+                ->toArray()
+            : [];
+
+        $peerTrendData = $this->buildPeerTrendData($metricLabels, $rankDimensions, $trajectories, $institutionProfiles);
 
         $usNewsRanks = Schema::hasTable('institutional_rankings')
             ? InstitutionalRanking::whereNotNull('unitid')
@@ -227,11 +245,18 @@ class FacultyTrendController extends Controller
         ];
     }
 
-    private function buildPeerTrendData(array $metricLabels, array $rankDimensions, Collection $trajectories): array
+    private function buildPeerTrendData(array $metricLabels, array $rankDimensions, Collection $trajectories, array $institutionProfiles = []): array
     {
         if (! Schema::hasTable('faculty_summaries')) {
             return $this->emptyPeerTrendData($metricLabels, $rankDimensions);
         }
+
+        $ranksByUnitid = Schema::hasTable('institutional_rankings')
+            ? InstitutionalRanking::whereNotNull('unitid')->pluck('top_public_rank_nat_univ', 'unitid')
+            : collect();
+
+        $uconnUnitid = FacultySummary::where('institution', self::UCONN)->whereNotNull('unitid')->value('unitid');
+        $uconnRank = $uconnUnitid ? ($ranksByUnitid->get((string) $uconnUnitid) ?? null) : null;
 
         $currentSets = $this->currentPeerSets($rankDimensions);
         $trajectorySet = $trajectories->map(fn($row) => [
@@ -243,20 +268,29 @@ class FacultyTrendController extends Controller
             'distance' => $row->trajectory_distance_from_uconn !== null ? round((float) $row->trajectory_distance_from_uconn, 4) : null,
         ])->values()->toArray();
 
+        $rankBandSet = [
+            'rank_band' => [
+                'label' => 'Similar US News Rank',
+                'description' => 'Institutions within a rank band of UConn in the US News Best Public Universities ranking. Adjust the band slider to widen or narrow the group.',
+                'isRankBand' => true,
+                'institutions' => [],
+            ],
+        ];
+
         $sets = collect([
             'trajectory' => [
                 'label' => 'Trajectory-Similar Peers',
                 'description' => 'Institutions changing in similar directions and at similar rates.',
                 'institutions' => $trajectorySet,
             ],
-        ])->merge($currentSets)->toArray();
+        ])->merge($currentSets)->merge($rankBandSet)->toArray();
 
         $allInstitutions = FacultySummary::whereNotNull('institution')
             ->orderBy('institution')
             ->orderByDesc('year')
             ->get()
             ->unique('institution')
-            ->map(fn(FacultySummary $row) => $this->institutionOptionForWorkspace($row))
+            ->map(fn(FacultySummary $row) => $this->institutionOptionForWorkspace($row, $ranksByUnitid))
             ->values();
 
         $institutions = collect([self::UCONN])
@@ -288,6 +322,8 @@ class FacultyTrendController extends Controller
         return [
             'uconn' => self::UCONN,
             'latestYear' => $latestYear,
+            'uconnRank' => $uconnRank,
+            'uconnUnitid' => $uconnUnitid,
             'defaultMetric' => 'pct_non_tenure',
             'defaultSet' => count($trajectorySet) > 0 ? 'trajectory' : 'current_composite',
             'metrics' => $this->metricCatalog($metricLabels),
@@ -299,6 +335,7 @@ class FacultyTrendController extends Controller
             'trends' => $trendRows->map(function ($institutionRows) {
                 return $institutionRows->keyBy('metric')->map(fn($row) => $this->trendForExplorer($row))->toArray();
             })->toArray(),
+            'institutionProfiles' => $institutionProfiles,
         ];
     }
 
@@ -391,14 +428,16 @@ class FacultyTrendController extends Controller
             ->values();
     }
 
-    private function institutionOptionForWorkspace(FacultySummary $summary): array
+    private function institutionOptionForWorkspace(FacultySummary $summary, Collection $ranksByUnitid = null): array
     {
         return [
             'institution' => $summary->institution,
+            'unitid' => $summary->unitid,
             'sector' => $summary->sector,
             'carnegie' => $summary->carnegie_classification,
             'totalFaculty' => $summary->total_faculty,
             'latestYear' => $summary->year,
+            'usNewsRank' => $ranksByUnitid && $summary->unitid ? ($ranksByUnitid->get((string) $summary->unitid) ?? null) : null,
         ];
     }
 
@@ -569,8 +608,11 @@ class FacultyTrendController extends Controller
         return [
             'uconn' => self::UCONN,
             'latestYear' => null,
+            'uconnRank' => null,
+            'uconnUnitid' => null,
             'defaultMetric' => 'pct_non_tenure',
             'defaultSet' => 'trajectory',
+            'institutionProfiles' => [],
             'metrics' => collect(self::DEFAULT_METRICS)->map(fn($metric) => [
                 'key' => $metric,
                 'label' => $metricLabels[$metric] ?? $metric,
@@ -593,7 +635,14 @@ class FacultyTrendController extends Controller
                     'rankColumn' => $dimension['column'],
                     'institutions' => [],
                 ],
-            ]))->toArray(),
+            ]))->merge([
+                'rank_band' => [
+                    'label' => 'Similar US News Rank',
+                    'description' => 'Institutions within a rank band of UConn in the US News Best Public Universities ranking.',
+                    'isRankBand' => true,
+                    'institutions' => [],
+                ],
+            ])->toArray(),
             'allInstitutions' => [],
             'benchmarks' => [
                 'R1' => ['label' => 'R1 average', 'series' => []],

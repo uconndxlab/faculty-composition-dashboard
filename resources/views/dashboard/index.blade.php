@@ -136,6 +136,73 @@
 </section>
 
 <section class="card chart-panel mb-4">
+    <div class="card-header card-header-brand">
+        <div class="fw-semibold">Institutional Profile</div>
+        <div class="small">US News outcome metrics for the selected institution.</div>
+    </div>
+    @if($institutionRanking)
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-6 col-md-4 col-xl-3">
+                <div class="kpi-card">
+                    <div class="kpi-label">US News Public Rank</div>
+                    <div class="kpi-value">{{ $institutionRanking->top_public_rank_nat_univ !== null ? '#' . $institutionRanking->top_public_rank_nat_univ : '—' }}</div>
+                    <p class="kpi-note">Best Public Universities ranking.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <div class="kpi-card">
+                    <div class="kpi-label">6-Year Grad Rate</div>
+                    <div class="kpi-value">{{ $institutionRanking->grad_rate_6yr_cohort !== null ? number_format((float) $institutionRanking->grad_rate_6yr_cohort, 1) . '%' : '—' }}</div>
+                    <p class="kpi-note">6-year graduation rate, full cohort.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <div class="kpi-card">
+                    <div class="kpi-label">Pell Grad Rate</div>
+                    <div class="kpi-value">{{ $institutionRanking->grad_rate_6yr_pell !== null ? number_format((float) $institutionRanking->grad_rate_6yr_pell, 1) . '%' : '—' }}</div>
+                    <p class="kpi-note">6-year graduation rate, Pell recipients.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <div class="kpi-card">
+                    <div class="kpi-label">First-Year Retention</div>
+                    <div class="kpi-value">{{ $institutionRanking->firstyr_retention_rate !== null ? number_format((float) $institutionRanking->firstyr_retention_rate, 1) . '%' : '—' }}</div>
+                    <p class="kpi-note">Share of first-year students returning for sophomore year.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <div class="kpi-card">
+                    <div class="kpi-label">Acceptance Rate</div>
+                    <div class="kpi-value">{{ $institutionRanking->acceptance_rate !== null ? number_format((float) $institutionRanking->acceptance_rate, 1) . '%' : '—' }}</div>
+                    <p class="kpi-note">Share of applicants admitted.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg Faculty Salary</div>
+                    <div class="kpi-value">{{ $institutionRanking->avg_faculty_salary !== null ? '$' . number_format((float) $institutionRanking->avg_faculty_salary, 0) : '—' }}</div>
+                    <p class="kpi-note">Average faculty salary across all ranks.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <div class="kpi-card">
+                    <div class="kpi-label">Student / Faculty Ratio</div>
+                    <div class="kpi-value">{{ $institutionRanking->student_faculty_ratio !== null ? number_format((float) $institutionRanking->student_faculty_ratio, 1) : '—' }}</div>
+                    <p class="kpi-note">Institutionally reported student-to-faculty ratio.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel-note">Metrics from the I3 2026 dataset.</div>
+    @else
+    <div class="card-body">
+        <p class="text-muted small mb-0">No institutional profile data available for {{ $selectedInstitution }}.</p>
+    </div>
+    @endif
+</section>
+
+<section class="card chart-panel mb-4">
     <div class="card-header d-flex flex-column flex-md-row justify-content-between gap-3 align-items-md-center">
         <div>
         <div class="fw-semibold">{{ $selectedInstitution }} Faculty Composition Over Time</div>

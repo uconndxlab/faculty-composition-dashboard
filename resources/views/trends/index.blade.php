@@ -80,6 +80,13 @@
             <label for="workspaceSet" class="form-label">Ranked set</label>
             <select id="workspaceSet" class="form-select"></select>
         </div>
+        <div class="peer-sidebar-section d-none" id="rankBandControl">
+            <label for="rankBandSlider" class="form-label">Rank band</label>
+            <div class="outlook-slider-value"><span id="rankBandLabel">±10 ranks</span></div>
+            <input id="rankBandSlider" class="form-range" type="range" min="1" max="30" step="1" value="10">
+            <div class="text-muted small number-tabular mt-1" id="rankBandRange">—</div>
+            <p class="kpi-note mt-2">Shows institutions ranked within this window of UConn's US News rank.</p>
+        </div>
         <div class="peer-sidebar-section d-none" id="rankedFocusControl">
             <label for="workspacePeer" class="form-label">Focus institution</label>
             <select id="workspacePeer" class="form-select" data-search-select data-search-placeholder="Search focus institutions"></select>
@@ -245,6 +252,27 @@
                     </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex flex-column flex-md-row justify-content-between gap-2 align-items-md-center">
+                <div>
+                    <div class="fw-semibold">Institutional Outcomes Comparison</div>
+                    <div class="text-muted small" id="outcomesDescription">US News outcome metrics for UConn and the focus institution.</div>
+                </div>
+                <button class="btn btn-sm btn-outline-primary collapse-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#outcomesPanel" aria-expanded="false" aria-controls="outcomesPanel">
+                    Compare
+                </button>
+            </div>
+            <div class="collapse" id="outcomesPanel">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover table-custom mb-0">
+                    <thead id="outcomesHead"></thead>
+                    <tbody id="outcomesBody"></tbody>
+                </table>
+            </div>
+            <div class="panel-note">Metrics from the I3 2026 dataset. Rates shown as percentages.</div>
             </div>
         </div>
 
@@ -436,6 +464,10 @@ const setSelect = document.getElementById('workspaceSet');
 const peerSelect = document.getElementById('workspacePeer');
 const rankedSetControl = document.getElementById('rankedSetControl');
 const rankedFocusControl = document.getElementById('rankedFocusControl');
+const rankBandControl = document.getElementById('rankBandControl');
+const rankBandSlider = document.getElementById('rankBandSlider');
+const rankBandLabel = document.getElementById('rankBandLabel');
+const rankBandRange = document.getElementById('rankBandRange');
 const customControls = document.getElementById('customControls');
 const customPeerSelects = [...document.querySelectorAll('.custom-peer-select')];
 const customFocusSelect = document.getElementById('customFocusPeer');
@@ -454,6 +486,8 @@ const projectedHeader = document.getElementById('projectedHeader');
 const outlookDescription = document.getElementById('outlookDescription');
 const chartOutlookNote = document.getElementById('chartOutlookNote');
 const allInstitutionMap = new Map((peerTrendData.allInstitutions || []).map((row) => [row.institution, row]));
+const institutionProfiles = peerTrendData.institutionProfiles || {};
+const uconnRank = peerTrendData.uconnRank || null;
 
 let lineChart;
 let currentScatterChart;
@@ -499,7 +533,36 @@ function selectedMetric() {
 }
 
 function currentSet() {
-    return peerTrendData.sets?.[setSelect.value] || Object.values(peerTrendData.sets || {})[0] || { institutions: [] };
+    const set = peerTrendData.sets?.[setSelect.value] || Object.values(peerTrendData.sets || {})[0] || { institutions: [] };
+    if (set.isRankBand) {
+        const band = Number(rankBandSlider?.value || 10);
+        if (!uconnRank) return { ...set, institutions: [] };
+        const minRank = uconnRank - band;
+        const maxRank = uconnRank + band;
+        const institutions = (peerTrendData.allInstitutions || [])
+            .filter((row) => row.usNewsRank !== null && row.usNewsRank !== undefined && row.usNewsRank >= minRank && row.usNewsRank <= maxRank && row.institution !== peerTrendData.uconn)
+            .sort((a, b) => (a.usNewsRank || 0) - (b.usNewsRank || 0))
+            .map((row) => ({
+                institution: row.institution,
+                rank: row.usNewsRank,
+                source: 'rank_band',
+                sector: row.sector,
+                carnegie: row.carnegie,
+            }));
+        return { ...set, institutions };
+    }
+    return set;
+}
+
+function updateRankBandLabel() {
+    if (!rankBandLabel || !rankBandRange) return;
+    const band = Number(rankBandSlider?.value || 10);
+    rankBandLabel.textContent = `±${band} ranks`;
+    if (uconnRank) {
+        rankBandRange.textContent = `Rank ${Math.max(1, uconnRank - band)}–${uconnRank + band}`;
+    } else {
+        rankBandRange.textContent = 'UConn rank unavailable';
+    }
 }
 
 function isCustomMode() {
@@ -751,9 +814,12 @@ function updateCustomFocusOptions() {
 }
 
 function updateModeControls() {
+    const isRankBand = !isCustomMode() && (peerTrendData.sets?.[setSelect.value]?.isRankBand ?? false);
     rankedSetControl.classList.toggle('d-none', isCustomMode());
     rankedFocusControl.classList.toggle('d-none', isCustomMode());
     customControls.classList.toggle('d-none', !isCustomMode());
+    if (rankBandControl) rankBandControl.classList.toggle('d-none', !isRankBand);
+    updateRankBandLabel();
 }
 
 function updateMetricDefinition() {
@@ -1236,6 +1302,54 @@ function renderWorkspace() {
     renderChangeScatter();
     renderComparisonTable();
     renderOutlook();
+    renderOutcomesPanel();
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(String(str)));
+    return div.innerHTML;
+}
+
+function renderOutcomesPanel() {
+    const outcomesBody = document.getElementById('outcomesBody');
+    const outcomesHead = document.getElementById('outcomesHead');
+    const outcomesDescription = document.getElementById('outcomesDescription');
+    if (!outcomesBody || !outcomesHead) return;
+
+    const focus = focusInstitution();
+    const uconnUnitid = peerTrendData.uconnUnitid ? String(peerTrendData.uconnUnitid) : null;
+    const focusUnitid = focus ? (allInstitutionMap.get(focus)?.unitid ? String(allInstitutionMap.get(focus).unitid) : null) : null;
+    const uconnProfile = uconnUnitid ? institutionProfiles[uconnUnitid] : null;
+    const focusProfile = focusUnitid ? institutionProfiles[focusUnitid] : null;
+
+    const focusLabel = focus || 'Focus Institution';
+    if (outcomesDescription) {
+        outcomesDescription.textContent = focus
+            ? `Comparing UConn vs ${focus} on US News institutional outcome metrics.`
+            : 'Select a focus institution to compare institutional outcomes.';
+    }
+
+    outcomesHead.innerHTML = `<tr><th>Metric</th><th class="text-end">UConn</th><th class="text-end">${escapeHtml(focusLabel)}</th></tr>`;
+
+    const pct = (v) => (v !== null && v !== undefined) ? `${formatNumber(v, 1)}%` : '—';
+    const dollar = (v) => (v !== null && v !== undefined) ? `$${Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—';
+    const num = (v, d = 1) => (v !== null && v !== undefined) ? formatNumber(v, d) : '—';
+    const rnk = (v) => (v !== null && v !== undefined) ? `#${v}` : '—';
+
+    const outcomeRows = [
+        { label: 'US News Public Rank', uconn: rnk(uconnProfile?.rank), focus: rnk(focusProfile?.rank) },
+        { label: '6-Year Graduation Rate', uconn: pct(uconnProfile?.grad_rate), focus: pct(focusProfile?.grad_rate) },
+        { label: '6-Year Pell Grad Rate', uconn: pct(uconnProfile?.grad_rate_pell), focus: pct(focusProfile?.grad_rate_pell) },
+        { label: 'First-Year Retention Rate', uconn: pct(uconnProfile?.retention_rate), focus: pct(focusProfile?.retention_rate) },
+        { label: 'Acceptance Rate', uconn: pct(uconnProfile?.acceptance_rate), focus: pct(focusProfile?.acceptance_rate) },
+        { label: 'Avg Faculty Salary', uconn: dollar(uconnProfile?.avg_faculty_salary), focus: dollar(focusProfile?.avg_faculty_salary) },
+        { label: 'Student / Faculty Ratio', uconn: num(uconnProfile?.student_faculty_ratio), focus: num(focusProfile?.student_faculty_ratio) },
+    ];
+
+    outcomesBody.innerHTML = outcomeRows.map(({ label, uconn: u, focus: f }) =>
+        `<tr><td>${label}</td><td class="text-end number-tabular">${u}</td><td class="text-end number-tabular">${f}</td></tr>`
+    ).join('');
 }
 
 if (metrics().length > 0) {
@@ -1270,9 +1384,17 @@ if (metrics().length > 0) {
     }));
     outlookHorizonSelect.addEventListener('change', renderWorkspace);
     setSelect.addEventListener('change', () => {
+        updateModeControls();
         updatePeerOptions();
         renderWorkspace();
     });
+    if (rankBandSlider) {
+        rankBandSlider.addEventListener('input', () => {
+            updateRankBandLabel();
+            updatePeerOptions();
+            renderWorkspace();
+        });
+    }
 }
 </script>
 @endpush

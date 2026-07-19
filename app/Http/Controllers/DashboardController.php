@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FacultySummary;
+use App\Models\InstitutionalRanking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -22,8 +23,9 @@ class DashboardController extends Controller
             $snapshotCards = [];
             $rankMixCards = [];
             $chartData = $this->buildChartData(collect());
+            $institutionRanking = null;
 
-            return view('dashboard.index', compact('latest', 'latestYear', 'selectedInstitution', 'selectedYear', 'institutions', 'years', 'snapshotCards', 'rankMixCards', 'chartData'));
+            return view('dashboard.index', compact('latest', 'latestYear', 'selectedInstitution', 'selectedYear', 'institutions', 'years', 'snapshotCards', 'rankMixCards', 'chartData', 'institutionRanking'));
         }
 
         $institutions = FacultySummary::whereNotNull('institution')
@@ -71,7 +73,11 @@ class DashboardController extends Controller
 
         $chartData = $this->buildChartData($history);
 
-        return view('dashboard.index', compact('latest', 'latestYear', 'selectedInstitution', 'selectedYear', 'institutions', 'years', 'snapshotCards', 'rankMixCards', 'chartData'));
+        $institutionRanking = $latest && Schema::hasTable('institutional_rankings') && $latest->unitid
+            ? InstitutionalRanking::where('unitid', $latest->unitid)->first()
+            : null;
+
+        return view('dashboard.index', compact('latest', 'latestYear', 'selectedInstitution', 'selectedYear', 'institutions', 'years', 'snapshotCards', 'rankMixCards', 'chartData', 'institutionRanking'));
     }
 
     private function buildSnapshotCards(FacultySummary $latest, $history): array
