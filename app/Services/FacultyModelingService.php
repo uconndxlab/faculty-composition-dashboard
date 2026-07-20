@@ -206,9 +206,12 @@ class FacultyModelingService
             $full = $state[5] + $state[6] + $state[7];
             $tenureSystem = $assistant + $associate + $full;
 
-            $requiredNtt = ($students - ($tenureSystem * $selected['advanced']['tenure_system_student_faculty_ratio'])) / $selected['main']['ntt_student_faculty_ratio'];
-            // Modeling choice: NTT can rise or fall based on required teaching capacity.
-            $ntt = max(0.0, $requiredNtt);
+            if ($year === $selected['advanced']['baseline_year']) {
+                $ntt = max(0.0, $selected['advanced']['baseline_ntt']);
+            } else {
+                $requiredNtt = ($students - ($tenureSystem * $selected['advanced']['tenure_system_student_faculty_ratio'])) / $selected['main']['ntt_student_faculty_ratio'];
+                $ntt = max(0.0, $requiredNtt);
+            }
             $totalFaculty = $tenureSystem + $ntt;
 
             $rows[] = [
