@@ -61,9 +61,6 @@
         <div class="context-sidebar-header">
             <div class="page-kicker">UConn Academic Operations</div>
             <h1 class="page-title">Faculty Composition</h1>
-            @if(! empty($peerTrendData['latestYear']))
-                <span class="metric-chip">Data through {{ $peerTrendData['latestYear'] }}</span>
-            @endif
         </div>
 
         {{-- Mode toggle --}}
@@ -85,15 +82,7 @@
                 <select id="profileYearSelect" class="form-select"></select>
                 <p class="kpi-note mt-2">KPI tiles update for the selected year. The chart always shows the full history.</p>
             </div>
-            <div class="peer-sidebar-section">
-                <label for="dashboardOutlookHorizon" class="form-label">Outlook horizon</label>
-                <div class="outlook-slider-value"><span id="profileOutlookLabel">3 years ahead</span></div>
-                <input id="profileOutlookHorizon" class="form-range" type="range" min="0" max="15" step="1" value="3">
-                <div class="d-flex justify-content-between small text-muted number-tabular">
-                    <span>Latest</span><span>+15 yrs</span>
-                </div>
-                <p class="kpi-note mt-2">Dashed lines extend average historical slopes. Directional context, not a forecast.</p>
-            </div>
+
             <div class="peer-sidebar-section">
                 <div class="form-label mb-2">Benchmarks</div>
                 <div class="d-grid gap-2">
@@ -163,15 +152,7 @@
                 </div>
                 <p class="kpi-note mt-2">Share metrics use average; faculty counts use median.</p>
             </div>
-            <div class="peer-sidebar-section">
-                <label for="outlookHorizon" class="form-label">Outlook horizon</label>
-                <div class="outlook-slider-value"><span id="outlookHorizonLabel">3 years ahead</span></div>
-                <input id="outlookHorizon" class="form-range" type="range" min="0" max="15" step="1" value="3">
-                <div class="d-flex justify-content-between small text-muted number-tabular">
-                    <span>2025</span><span>+15 yrs</span>
-                </div>
-                <p class="kpi-note mt-2">Outlook extends the average yearly trend. Not a forecast model.</p>
-            </div>
+
         </div>
 
         </div>{{-- /context-sidebar-content --}}
@@ -213,7 +194,6 @@
                     <div class="fw-semibold">Institutional Profile
                         <span id="profileRankBadge" class="rank-badge ms-2 d-none"></span>
                     </div>
-                    <div class="small text-muted">US News 2026 outcome metrics.</div>
                 </div>
                 <div id="profileI3Body">
                     <div class="card-body">
@@ -234,18 +214,19 @@
                             <button type="button" class="btn btn-outline-primary active" id="profileSharesBtn">Shares</button>
                             <button type="button" class="btn btn-outline-primary" id="profileCountsBtn">Counts</button>
                         </div>
+                        <div class="outlook-inline-control">
+                            <div class="d-flex justify-content-between align-items-center gap-2">
+                                <span class="outlook-inline-label">Outlook</span>
+                                <span class="outlook-inline-value" id="profileOutlookLabel">3 yrs ahead</span>
+                            </div>
+                            <input id="profileOutlookHorizon" class="form-range outlook-inline-range" type="range" min="0" max="15" step="1" value="3">
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
                     <canvas id="profileChart" height="100"></canvas>
                 </div>
-                <div class="card-footer d-flex flex-wrap gap-3 small text-muted">
-                    <span><span style="display:inline-block;width:16px;height:3px;background:#0d6efd;vertical-align:middle"></span> Tenure-System</span>
-                    <span><span style="display:inline-block;width:16px;height:3px;background:#dc3545;vertical-align:middle"></span> Non-Tenure</span>
-                    <span id="profileTotalFacultyLegend"><span style="display:inline-block;width:16px;height:3px;background:#198754;vertical-align:middle"></span> Total Faculty</span>
-                    <span><span style="display:inline-block;width:16px;height:3px;background:#a21caf;border-top:2px dashed #a21caf;vertical-align:middle"></span> R1 avg</span>
-                    <span><span style="display:inline-block;width:16px;height:3px;background:#0891b2;border-top:2px dashed #0891b2;vertical-align:middle"></span> R2 avg</span>
-                </div>
+                <div class="card-footer d-flex flex-wrap gap-3 align-items-center py-2" id="profileSlopeStrip"></div>
             </div>
 
         </div>{{-- /profileContent --}}
@@ -262,12 +243,20 @@
                         <div class="stat-strip d-flex flex-wrap gap-3" id="compareStatStrip"></div>
                     </div>
                     <div class="benchmark-summary d-flex flex-wrap gap-2" id="benchmarkSummary"></div>
-                    <div class="outlook-chart-note mt-1" id="chartOutlookNote">Move the outlook slider to extend average slopes beyond the latest actual year.</div>
                 </div>
-                <div class="chart-measure-control trend-measure-control flex-shrink-0">
-                    <label for="workspaceMetric" class="form-label">Metric</label>
-                    <select id="workspaceMetric" class="form-select form-select-sm"></select>
-                    <div class="metric-definition mt-1" id="metricDefinition">—</div>
+                <div class="d-flex gap-3 flex-shrink-0 align-items-start">
+                    <div class="chart-measure-control trend-measure-control">
+                        <label for="workspaceMetric" class="form-label">Metric</label>
+                        <select id="workspaceMetric" class="form-select form-select-sm"></select>
+                        <div class="metric-definition mt-1" id="metricDefinition">—</div>
+                    </div>
+                    <div class="outlook-inline-control">
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <span class="outlook-inline-label">Outlook</span>
+                            <span class="outlook-inline-value" id="outlookHorizonLabel">3 yrs ahead</span>
+                        </div>
+                        <input id="outlookHorizon" class="form-range outlook-inline-range" type="range" min="0" max="15" step="1" value="3">
+                    </div>
                 </div>
             </div>
             <div class="card-body">
@@ -531,7 +520,7 @@ const outlookHorizonSelect = document.getElementById('outlookHorizon');
 const outlookHorizonLabel = document.getElementById('outlookHorizonLabel');
 const outlookBody = document.getElementById('outlookBody');
 const projectedHeader = document.getElementById('projectedHeader');
-const chartOutlookNote = document.getElementById('chartOutlookNote');
+
 const allInstitutionMap = new Map((peerTrendData.allInstitutions || []).map((row) => [row.institution, row]));
 const institutionProfiles = peerTrendData.institutionProfiles || {};
 const uconnRank = peerTrendData.uconnRank || null;
@@ -753,8 +742,8 @@ function outlookHorizon() {
 function updateOutlookHorizonLabel() {
     const horizon = outlookHorizon();
     outlookHorizonLabel.textContent = horizon === 0
-        ? 'Latest actual year only'
-        : `${horizon} year${horizon === 1 ? '' : 's'} ahead`;
+        ? 'Latest only'
+        : `+${horizon} yr${horizon === 1 ? '' : 's'}`;
 }
 
 function projectedValue(value, slope, horizon, metric) {
@@ -896,22 +885,15 @@ function initializeControls() {
     document.getElementById('profileOutlookHorizon')?.addEventListener('input', () => {
         const h = Number(document.getElementById('profileOutlookHorizon').value);
         const lbl = document.getElementById('profileOutlookLabel');
-        if (lbl) lbl.textContent = h === 0 ? 'Latest actual year only' : `${h} year${h === 1 ? '' : 's'} ahead`;
+        if (lbl) lbl.textContent = h === 0 ? 'Latest only' : `+${h} yr${h === 1 ? '' : 's'}`;
         renderProfileChart();
     });
     document.querySelectorAll('.profile-benchmark-toggle').forEach((i) => i.addEventListener('change', renderProfileChart));
 
-    // Profile chart mode buttons
-    document.getElementById('profileSharesBtn')?.addEventListener('click', () => {
-        profileMode = 'shares';
-        document.getElementById('profileSharesBtn').classList.add('active');
-        document.getElementById('profileCountsBtn').classList.remove('active');
-        renderProfileChart();
-    });
-    document.getElementById('profileCountsBtn')?.addEventListener('click', () => {
-        profileMode = 'counts';
-        document.getElementById('profileCountsBtn').classList.add('active');
-        document.getElementById('profileSharesBtn').classList.remove('active');
+    // Profile counts overlay toggle
+    document.getElementById('profileCountsBtn')?.addEventListener('click', function () {
+        showCountsOverlay = !showCountsOverlay;
+        this.classList.toggle('active', showCountsOverlay);
         renderProfileChart();
     });
 
@@ -1222,10 +1204,6 @@ function renderLineChart() {
             },
         },
     };
-
-    chartOutlookNote.textContent = horizon > 0
-        ? `Dashed lines extend average slopes through ${latestYear + horizon}. Slope values appear in outlook tooltips and table rows.`
-        : 'Move the outlook slider to extend average slopes beyond the latest actual year.';
 
     if (!lineChart) {
         lineChart = new Chart(document.getElementById('peerTrendLineChart'), { type: 'line', data, options, plugins: [outlookBoundaryPlugin] });
@@ -1588,7 +1566,7 @@ function renderWorkspace() {
 }
 
 // ── Profile mode ─────────────────────────────────────────────────────────
-let profileMode = 'shares';
+let showCountsOverlay = false;
 const profileData = peerTrendData.profileSeries || { labels: [], shares: [], counts: [], points: [] };
 const latestByYear = peerTrendData.latestByYear || {};
 const allYears = peerTrendData.allYears || [];
@@ -1664,14 +1642,14 @@ function renderProfileKpis() {
 
 function renderProfileChart() {
     const inst = profileInstitution();
-    const mode = profileMode;
     const rows = profileSeriesRows(inst);
     const horizon = profileHorizon();
     const enabledBenchmarkKeys = enabledProfileBenchmarks();
 
-    // In shares mode, only show percent-axis series (exclude total faculty count line)
-    const allSeriesDefs = profileData[mode] || [];
-    const seriesDefs = mode === 'shares' ? allSeriesDefs.filter((d) => d.yAxis !== 'faculty') : allSeriesDefs;
+    // Always show shares (percent) series; optionally overlay count series
+    const shareSeries = (profileData['shares'] || []).filter((d) => d.yAxis === 'percent');
+    const countSeries = showCountsOverlay ? (profileData['counts'] || []).filter((d) => d.yAxis === 'faculty') : [];
+    const seriesDefs = [...shareSeries, ...countSeries];
 
     const datasets = seriesDefs.map((def) => {
         const data = rows.map((r) => ({ x: r.year, y: r[def.key] ?? null })).filter((d) => d.y !== null);
@@ -1695,6 +1673,8 @@ function renderProfileChart() {
             tension: 0.25,
             spanGaps: true,
             yAxisID: def.yAxis,
+            slope,
+            metricIsPercent: def.yAxis === 'percent',
         };
         if (outlookData.length > 1) {
             return [base, { ...base, label: def.label + ' outlook', data: outlookData, borderDash: [4, 6], borderWidth: 2, pointRadius: 0, isOutlook: true }];
@@ -1724,6 +1704,8 @@ function renderProfileChart() {
                 spanGaps: true,
                 yAxisID: def.yAxis,
                 isBenchmark: true,
+                slope: bSlope,
+                metricIsPercent: def.yAxis === 'percent',
             };
             datasets.push(historyBase);
             if (horizon > 0 && latest && bSlope !== null) {
@@ -1742,7 +1724,6 @@ function renderProfileChart() {
         });
     });
 
-    const isPercent = mode === 'shares';
     const options = {
         responsive: true,
         parsing: false,
@@ -1765,18 +1746,43 @@ function renderProfileChart() {
                     title: (items) => items.length > 0 ? String(Math.trunc(items[0].parsed.x)) : '',
                     label: (ctx) => {
                         const v = ctx.parsed.y;
-                        const formatted = isPercent && ctx.dataset.yAxisID === 'percent' ? (v !== null ? v.toFixed(1) + '%' : '—') : (v !== null ? Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '—');
-                        return `${ctx.dataset.label.replace(' outlook', '')}: ${formatted}`;
+                        const ds = ctx.dataset;
+                        const isPerc = ds.yAxisID === 'percent';
+                        const formatted = isPerc ? (v !== null ? v.toFixed(1) + '%' : '—') : (v !== null ? Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '—');
+                        const slopeStr = (ds.slope !== null && ds.slope !== undefined)
+                            ? `  ·  slope ${formatSlope(ds.slope, { isPercentMetric: ds.metricIsPercent })}`
+                            : '';
+                        return `${ds.label.replace(' outlook', '')}: ${formatted}${slopeStr}`;
                     },
                 },
             },
         },
         scales: {
             x: { type: 'linear', title: { display: true, text: 'Year' }, ticks: { precision: 0, callback: (v) => String(Math.trunc(v)) } },
-            percent: { type: 'linear', position: 'left', title: { display: true, text: 'Share of Total Faculty' }, ticks: { callback: (v) => v + '%' }, display: isPercent },
-            faculty: { type: 'linear', position: 'left', title: { display: true, text: 'Faculty Count' }, display: !isPercent, grid: { drawOnChartArea: true } },
+            percent: { type: 'linear', position: 'left', title: { display: true, text: 'Share of Total Faculty' }, ticks: { callback: (v) => v + '%' }, display: true },
+            faculty: { type: 'linear', position: 'right', title: { display: showCountsOverlay, text: 'Faculty Count' }, display: showCountsOverlay, grid: { drawOnChartArea: false } },
         },
     };
+
+    // Slope summary strip
+    const slopeStrip = document.getElementById('profileSlopeStrip');
+    if (slopeStrip) {
+        const stripItems = datasets
+            .filter((ds) => !ds.isOutlook && ds.slope !== null && ds.slope !== undefined)
+            .map((ds) => {
+                const slopeStr = formatSlope(ds.slope, { isPercentMetric: ds.metricIsPercent });
+                const color = typeof ds.borderColor === 'string' ? ds.borderColor : '#666';
+                const swatchStyle = ds.borderDash?.length
+                    ? `background:none;border-top:2px dashed ${color};`
+                    : `background:${color};`;
+                return `<span class="slope-strip-item d-inline-flex align-items-center gap-1">`
+                    + `<span class="slope-swatch" style="${swatchStyle}"></span>`
+                    + `<span class="stat-strip-label">${ds.label}</span>`
+                    + `<span class="stat-strip-value">${slopeStr}</span>`
+                    + `</span>`;
+            }).join('');
+        slopeStrip.innerHTML = stripItems;
+    }
 
     if (!profileChart) {
         profileChart = new Chart(document.getElementById('profileChart'), { type: 'line', data: { datasets }, options });
@@ -1786,9 +1792,9 @@ function renderProfileChart() {
         profileChart.update();
     }
 
-    // Hide total faculty legend swatch in shares mode
+    // Hide total faculty legend swatch when counts overlay is off
     const tfLegend = document.getElementById('profileTotalFacultyLegend');
-    if (tfLegend) tfLegend.classList.toggle('d-none', isPercent);
+    if (tfLegend) tfLegend.classList.toggle('d-none', !showCountsOverlay);
 }
 
 function renderProfileI3() {
@@ -1802,7 +1808,7 @@ function renderProfileI3() {
     if (rankBadge) {
         const rank = profile?.rank ?? instInfo?.usNewsRank ?? null;
         if (rank !== null && rank !== undefined) {
-            rankBadge.textContent = `#${rank} Best Public Universities`;
+            rankBadge.textContent = `#${rank} US News`;
             rankBadge.classList.remove('d-none');
         } else {
             rankBadge.classList.add('d-none');
@@ -1820,15 +1826,13 @@ function renderProfileI3() {
     const fmtSal = (v) => v !== null && v !== undefined ? '$' + Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '—';
     const fmtSfr = (v) => v !== null && v !== undefined ? Number(v).toFixed(1) : '—';
     body.innerHTML = `
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-6 col-md-4 col-xl-2"><div class="kpi-card"><div class="kpi-label">6-Yr Grad Rate</div><div class="kpi-value">${fmtPct(profile.grad_rate)}</div></div></div>
-                <div class="col-6 col-md-4 col-xl-2"><div class="kpi-card"><div class="kpi-label">Pell Grad Rate</div><div class="kpi-value">${fmtPct(profile.grad_rate_pell)}</div></div></div>
-                <div class="col-6 col-md-4 col-xl-2"><div class="kpi-card"><div class="kpi-label">1st-Yr Retention</div><div class="kpi-value">${fmtPct(profile.retention_rate)}</div></div></div>
-                <div class="col-6 col-md-4 col-xl-2"><div class="kpi-card"><div class="kpi-label">Acceptance Rate</div><div class="kpi-value">${fmtPct(profile.acceptance_rate)}</div></div></div>
-                <div class="col-6 col-md-4 col-xl-2"><div class="kpi-card"><div class="kpi-label">Avg Faculty Salary</div><div class="kpi-value">${fmtSal(profile.avg_faculty_salary)}</div></div></div>
-                <div class="col-6 col-md-4 col-xl-2"><div class="kpi-card"><div class="kpi-label">Student/Faculty</div><div class="kpi-value">${fmtSfr(profile.student_faculty_ratio)}</div></div></div>
-            </div>
+        <div class="outcome-stat-strip">
+            <div class="outcome-stat"><div class="outcome-stat-label">6-Yr Grad Rate</div><div class="outcome-stat-value">${fmtPct(profile.grad_rate)}</div></div>
+            <div class="outcome-stat"><div class="outcome-stat-label">Pell Grad Rate</div><div class="outcome-stat-value">${fmtPct(profile.grad_rate_pell)}</div></div>
+            <div class="outcome-stat"><div class="outcome-stat-label">1st-Yr Retention</div><div class="outcome-stat-value">${fmtPct(profile.retention_rate)}</div></div>
+            <div class="outcome-stat"><div class="outcome-stat-label">Acceptance Rate</div><div class="outcome-stat-value">${fmtPct(profile.acceptance_rate)}</div></div>
+            <div class="outcome-stat"><div class="outcome-stat-label">Avg Faculty Salary</div><div class="outcome-stat-value">${fmtSal(profile.avg_faculty_salary)}</div></div>
+            <div class="outcome-stat"><div class="outcome-stat-label">Student / Faculty</div><div class="outcome-stat-value">${fmtSfr(profile.student_faculty_ratio)}</div></div>
         </div>`;
 }
 
@@ -1865,7 +1869,7 @@ function renderOutcomesPanel() {
     const focusLabel = focus || 'Focus Institution';
     if (outcomesDescription) {
         outcomesDescription.textContent = focus
-            ? `Comparing UConn vs ${focus} on US News institutional outcome metrics.`
+            ? `Comparing UConn vs ${focus} on outcome metrics.`
             : 'Select a focus institution to compare institutional outcomes.';
     }
 

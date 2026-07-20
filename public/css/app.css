@@ -611,11 +611,49 @@ body.app-sidebar-collapsed .page-frame {
 
 .kpi-value {
     color: var(--text-primary);
-    font-size: clamp(1.75rem, 3vw, 2.35rem);
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
     font-variant-numeric: tabular-nums;
     font-weight: 800;
     line-height: 1;
     margin-bottom: 0.45rem;
+}
+
+.outcome-stat-strip {
+    align-items: stretch;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.outcome-stat {
+    border-right: 1px solid var(--border-default);
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    gap: 0.3rem;
+    min-width: 110px;
+    padding: 1rem 1.1rem;
+}
+
+.outcome-stat:last-child {
+    border-right: none;
+}
+
+.outcome-stat-label {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    line-height: 1.3;
+    text-transform: uppercase;
+}
+
+.outcome-stat-value {
+    color: var(--text-primary);
+    font-size: 1.3rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .kpi-detail {
@@ -808,15 +846,32 @@ body.app-sidebar-collapsed .page-frame {
     border: 0;
 }
 
-.outlook-chart-note {
-    background: var(--surface-secondary);
-    border: 1px dashed var(--border-default);
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
-    display: inline-flex;
-    font-size: 0.82rem;
+.outlook-inline-control {
+    border-left: 1px solid var(--border-default);
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding-left: 0.85rem;
+}
+
+.outlook-inline-label {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.outlook-inline-value {
+    color: var(--brand-accent);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
     font-weight: 700;
-    padding: 0.35rem 0.55rem;
+}
+
+.outlook-inline-range {
+    accent-color: var(--brand-accent);
+    width: 110px;
 }
 
 /* Inline stat strip inside chart card header */
@@ -840,6 +895,15 @@ body.app-sidebar-collapsed .page-frame {
     font-weight: 700;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
+}
+
+.slope-swatch {
+    display: inline-block;
+    flex-shrink: 0;
+    height: 3px;
+    width: 18px;
+    border-radius: 2px;
+    vertical-align: middle;
 }
 
 .dashboard-outlook-control {
