@@ -151,7 +151,7 @@ class ImportController extends Controller
 
     private function csvPath(string $key): string
     {
-        return storage_path('app/private/' . self::FILES[$key]);
+        return database_path('data/' . self::FILES[$key]);
     }
 
     /**

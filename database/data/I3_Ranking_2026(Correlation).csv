@@ -1,0 +1,31 @@
+Column_Name,Variable,Correlation_Direction,Correlation_Magnitude
+top_public_rank_nat_univ,Top Public Schools Rank - National Universities,Positive,1
+grad_rate_6yr_pell,6-Year Graduation Rate Of Students Who Received A Pell Grant,Negative,0.8024
+acceptance_rate,Acceptance rate,Positive,0.7616
+pct_firstyr_top10_hs,% of first-year students in top 10 percent of high school class,Negative,0.7535
+oos_acceptance_rate,Out-of-state acceptance rate,Positive,0.7492
+grad_rate_6yr_cohort,6-year graduation rate (single cohort),Negative,0.7252
+firstyr_retention_rate,First-Year Retention Rate,Negative,0.7189
+inst_acceptance_rate,In-state acceptance rate,Positive,0.711
+Number_of_applicants,Number of applicants,Negative,0.6677
+total_rd_expenditures,total_rd_expenditures,Negative,0.6131
+median_fed_loan_debt,Median debt for grads with federal loans ($),Positive,0.5807
+avg_faculty_salary,Average Faculty Salary,Negative,0.5702
+edu_exp_per_student,Educational expenditures per student,Negative,0.558
+Doctorate_Degrees,Number of students receiving a Doctor's degree (DRVC2025),Negative,0.5385
+Masters_Degrees,Number of students receiving a Master's degree (DRVC2025),Negative,0.518
+Bachelor_Degrees,Number of students receiving a Bachelor's degree (DRVC2025),Negative,0.5143
+total_enrollment,Total enrollment,Negative,0.4886
+total_faculty,Total faculty,Negative,0.4245
+UGFR_Perc_International,Percent of first-time undergraduates - foreign countries (DRVEF2024),Negative,0.41
+avg_discount_sticker,Average discount from sticker price,Negative,0.3722
+oos_tuition_fees,Out-of-state tuition and fees,Negative,0.3641
+UGFR_Cohort,Full-time first-time degree/certificate-seeking undergraduate enrollment (DRVEF2024),Negative,0.3502
+pell_pct_cohort,Pell % of Cohort,Positive,0.2093
+student_faculty_ratio,Student/faculty ratio,Negative,0.1932
+inst_tuition_fees,In-state tuition and fees,Positive,0.1664
+ipeds_id,IPEDS_ID,Positive,0.1599
+net_cost,Net cost,Positive,0.1033
+UGFR_Perc_Out_of_State,Percent of first-time undergraduates - out-of-state (DRVEF2024),Positive,0.0906
+pct_grads_gt_hs_earnings,College grads earning more than a HS grad,Positive,0.0446
+UGFR_Perc_In_State,Percent of first-time undergraduates - in-state (DRVEF2024),Positive,0.0316

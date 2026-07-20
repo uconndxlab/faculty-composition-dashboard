@@ -29,7 +29,7 @@
             <div class="page-kicker">Data Operations</div>
             <h1 class="page-title">Imports</h1>
             <p class="page-subtitle">Load IPEDS analytical data from local CSV exports and refresh the comparison workspace.</p>
-            <span class="metric-chip">storage/app/private/</span>
+            <span class="metric-chip">database/data/</span>
         </div>
         <div class="peer-sidebar-section">
             <div class="peer-sidebar-heading">Bulk Refresh</div>
