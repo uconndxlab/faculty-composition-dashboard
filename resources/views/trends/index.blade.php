@@ -220,7 +220,6 @@
                         <p class="text-muted small mb-0">Select an institution to view outcome metrics.</p>
                     </div>
                 </div>
-                <div class="panel-note">Metrics from the I3 2026 dataset.</div>
             </div>
 
             {{-- Profile composition chart --}}
@@ -274,14 +273,7 @@
             <div class="card-body">
                 <canvas id="peerTrendLineChart" height="105"></canvas>
             </div>
-            <div class="card-footer d-flex flex-wrap gap-3 small text-muted justify-content-between align-items-center">
-                <div class="d-flex flex-wrap gap-3">
-                    <span><span class="visual-key-dot visual-key-dot-uconn"></span>UConn</span>
-                    <span><span class="visual-key-dot visual-key-dot-focus"></span>Focus</span>
-                    <span><span class="visual-key-dot visual-key-dot-context"></span>Context</span>
-                    <span><span class="visual-key-dot visual-key-dot-r1"></span>R1</span>
-                    <span><span class="visual-key-dot visual-key-dot-r2"></span>R2</span>
-                </div>
+            <div class="card-footer d-flex flex-wrap gap-3 small text-muted justify-content-end align-items-center">
                 <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#outlookTablePanel" aria-expanded="false" aria-controls="outlookTablePanel">
                     Projection table
                 </button>
@@ -317,7 +309,6 @@
                     <tbody id="outcomesBody"></tbody>
                 </table>
             </div>
-            <div class="panel-note">Metrics from the I3 2026 dataset.</div>
         </div>
 
         {{-- Comparison set table --}}
@@ -1106,6 +1097,58 @@ function lineDatasets(metric) {
     return [...institutionDatasets, ...benchmarkDatasets];
 }
 
+// Shared legend hover helpers — emphasise the hovered series, dim the rest.
+function legendHoverHandlers(getSeriesKey = (ds) => ds.seriesKey ?? ds.label) {
+    return {
+        onHover(event, item, legend) {
+            const chart = legend.chart;
+            const hoveredKey = getSeriesKey(chart.data.datasets[item.datasetIndex]);
+            chart.data.datasets.forEach((ds, i) => {
+                const isMatch = getSeriesKey(ds) === hoveredKey;
+                ds._savedBorderWidth = ds._savedBorderWidth ?? ds.borderWidth;
+                ds._savedBorderAlpha  = ds._savedBorderAlpha  ?? null;
+                if (isMatch) {
+                    ds.borderWidth = (ds._savedBorderWidth || 2) + 1.5;
+                    ds.borderDash = [];
+                } else {
+                    ds.borderWidth = 1;
+                    const orig = ds._savedBorderColor ?? ds.borderColor;
+                    ds._savedBorderColor = orig;
+                    ds.borderColor = typeof orig === 'string'
+                        ? orig.replace(/rgba?\(([^)]+)\)/, (_, g) => {
+                              const p = g.split(',');
+                              if (p.length === 4) p[3] = ' 0.15';
+                              else if (p.length === 3) return `rgba(${g}, 0.15)`;
+                              return `rgba(${p.join(',')})`;
+                          })
+                        : orig;
+                }
+            });
+            event.native.target.style.cursor = 'pointer';
+            chart.update('none');
+        },
+        onLeave(event, item, legend) {
+            const chart = legend.chart;
+            chart.data.datasets.forEach((ds) => {
+                if (ds._savedBorderWidth !== undefined) {
+                    ds.borderWidth = ds._savedBorderWidth;
+                    delete ds._savedBorderWidth;
+                }
+                if (ds._savedBorderColor !== undefined) {
+                    ds.borderColor = ds._savedBorderColor;
+                    delete ds._savedBorderColor;
+                }
+                if (ds._origBorderDash !== undefined) {
+                    ds.borderDash = ds._origBorderDash;
+                    delete ds._origBorderDash;
+                }
+            });
+            event.native.target.style.cursor = 'default';
+            chart.update('none');
+        },
+    };
+}
+
 function renderLineChart() {
     const metric = selectedMetric();
     const horizon = outlookHorizon();
@@ -1118,6 +1161,7 @@ function renderLineChart() {
         plugins: {
             legend: {
                 position: 'bottom',
+                ...legendHoverHandlers((ds) => ds.seriesKey ?? ds.label),
                 onClick: (event, item, legend) => {
                     const chart = legend.chart;
                     const dataset = chart.data.datasets[item.datasetIndex];
@@ -1143,6 +1187,12 @@ function renderLineChart() {
                 },
                 labels: {
                     filter: (item, chart) => !chart.datasets[item.datasetIndex]?.isOutlook,
+                    font: { size: 12 },
+                    padding: 16,
+                    boxWidth: 24,
+                    boxHeight: 3,
+                    borderRadius: 2,
+                    color: '#374151',
                 },
             },
             tooltip: {
@@ -1699,7 +1749,16 @@ function renderProfileChart() {
         plugins: {
             legend: {
                 position: 'bottom',
-                labels: { filter: (item, chart) => !chart.datasets[item.datasetIndex]?.isOutlook },
+                ...legendHoverHandlers(),
+                labels: {
+                    filter: (item, chart) => !chart.datasets[item.datasetIndex]?.isOutlook,
+                    font: { size: 12 },
+                    padding: 16,
+                    boxWidth: 24,
+                    boxHeight: 3,
+                    borderRadius: 2,
+                    color: '#374151',
+                },
             },
             tooltip: {
                 callbacks: {
