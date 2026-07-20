@@ -257,13 +257,18 @@
                         </div>
                         <input id="outlookHorizon" class="form-range outlook-inline-range" type="range" min="0" max="15" step="1" value="3">
                     </div>
+                    <div class="outlook-inline-control">
+                        <span class="outlook-inline-label">Overlay</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-1" id="compareCountsBtn">+ Counts</button>
+                    </div>
                 </div>
             </div>
             <div class="card-body">
                 <canvas id="peerTrendLineChart" height="105"></canvas>
             </div>
-            <div class="card-footer d-flex flex-wrap gap-3 small text-muted justify-content-end align-items-center">
-                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#outlookTablePanel" aria-expanded="false" aria-controls="outlookTablePanel">
+            <div class="card-footer d-flex flex-wrap gap-3 align-items-center">
+                <div id="compareSlopeStrip" class="d-flex flex-wrap gap-3 flex-grow-1"></div>
+                <button class="btn btn-sm btn-outline-secondary flex-shrink-0" type="button" data-bs-toggle="collapse" data-bs-target="#outlookTablePanel" aria-expanded="false" aria-controls="outlookTablePanel">
                     Projection table
                 </button>
             </div>
@@ -551,6 +556,7 @@ let profileChart;
 let currentScatterChart;
 let changeScatterChart;
 const hiddenLineSeries = new Set();
+let showCompareCounts = false;
 
 const outlookBoundaryPlugin = {
     id: 'outlookBoundary',
@@ -945,12 +951,8 @@ function updatePeerOptions() {
 
 function initializeCustomOptions() {
     const options = [{ value: '', label: 'Choose institution' }, ...customInstitutionOptions()];
-    const defaultPeer = peerSelect.value && peerSelect.value !== peerTrendData.uconn
-        ? peerSelect.value
-        : options[1]?.value || '';
-
-    customPeerSelects.forEach((select, index) => {
-        fillSelect(select, options, index === 0 ? defaultPeer : '');
+    customPeerSelects.forEach((select) => {
+        fillSelect(select, options, '');
     });
     updateCustomFocusOptions();
 }
@@ -980,7 +982,7 @@ function updateMetricDefinition() {
     metricDefinition.textContent = `${metric.group} · ${metric.isPercentMetric ? 'Share of total faculty' : 'Faculty count'} · ${metric.changeUnit}/yr trend`;
 }
 
-function lineDatasets(metric) {
+function lineDatasets(metric, showCounts = false) {
     const palette = ['#6c757d', '#198754', '#fd7e14', '#20c997', '#6610f2'];
     const horizon = outlookHorizon();
     const latestYear = Number(peerTrendData.latestYear);
@@ -1003,6 +1005,7 @@ function lineDatasets(metric) {
             tension: 0.25,
             spanGaps: true,
             seriesKey,
+            slope: trend?.slope ?? null,
         };
 
         const outlookDataset = {
@@ -1020,7 +1023,54 @@ function lineDatasets(metric) {
             slope: trend?.slope,
         };
 
-        return outlookDataset.data.length > 0 ? [historyDataset, outlookDataset] : [historyDataset];
+        const result = outlookDataset.data.length > 0 ? [historyDataset, outlookDataset] : [historyDataset];
+
+        if (showCounts && metric.isPercentMetric) {
+            const tfData = rows
+                .filter((row) => row.total_faculty !== null && row.total_faculty !== undefined)
+                .map((row) => ({ x: row.year, y: Number(row.total_faculty) }));
+            if (tfData.length > 0) {
+                const tfTrend = trendRow(institution, 'total_faculty');
+                const tfLatest = latestRow(institution);
+                const tfCountMetric = { isPercentMetric: false };
+                const tfSeriesKey = `institution:${institution}:total_faculty_overlay`;
+                const tfOutlookData = projectedPointsFromLatest(latestYear, tfLatest?.total_faculty, tfTrend?.slope, horizon, tfCountMetric);
+                result.push({
+                    label: `${institution} (total faculty)`,
+                    data: tfData,
+                    borderColor: color,
+                    backgroundColor: color,
+                    borderWidth: isUconn || isFocus ? 2 : 1.25,
+                    borderDash: [3, 3],
+                    pointRadius: 0,
+                    tension: 0.25,
+                    spanGaps: true,
+                    yAxisID: 'faculty',
+                    seriesKey: tfSeriesKey,
+                    slope: tfTrend?.slope ?? null,
+                    isCounts: true,
+                });
+                if (tfOutlookData.length > 0) {
+                    result.push({
+                        label: `${institution} (total faculty) outlook`,
+                        data: tfOutlookData,
+                        borderColor: color,
+                        backgroundColor: color,
+                        borderWidth: isUconn || isFocus ? 1.75 : 1,
+                        borderDash: [6, 4],
+                        pointRadius: 0,
+                        tension: 0.2,
+                        spanGaps: true,
+                        yAxisID: 'faculty',
+                        seriesKey: tfSeriesKey,
+                        isOutlook: true,
+                        isCounts: true,
+                    });
+                }
+            }
+        }
+
+        return result;
     });
 
     const benchmarkDatasets = enabledBenchmarks().flatMap((bucket) => {
@@ -1135,7 +1185,7 @@ function renderLineChart() {
     const metric = selectedMetric();
     const horizon = outlookHorizon();
     const latestYear = Number(peerTrendData.latestYear);
-    const data = { datasets: lineDatasets(metric) };
+    const data = { datasets: lineDatasets(metric, showCompareCounts) };
 
     const options = {
         responsive: true,
@@ -1182,11 +1232,13 @@ function renderLineChart() {
                     title: (items) => items.length > 0 ? String(Math.trunc(items[0].parsed.x)) : '',
                     label: (context) => {
                         const raw = context.raw || {};
+                        const ds = context.dataset;
                         const suffix = raw.benchmark && raw.n ? ` (${raw.n} institutions)` : '';
-                        const slope = context.dataset.isOutlook ? ` · slope ${formatSlope(context.dataset.slope, metric)}` : '';
-                        const label = context.dataset.isOutlook ? context.dataset.label.replace(' outlook', '') : context.dataset.label;
-
-                        return `${label}: ${formatValue(context.parsed.y, metric)}${suffix}${slope}`;
+                        const slopeStr = ds.slope !== null && ds.slope !== undefined && !ds.isCounts
+                            ? ` · slope ${formatSlope(ds.slope, metric)}`
+                            : '';
+                        const label = ds.isOutlook ? ds.label.replace(' outlook', '') : ds.label;
+                        return `${label}: ${formatValue(context.parsed.y, metric)}${suffix}${slopeStr}`;
                     },
                 },
             },
@@ -1202,6 +1254,13 @@ function renderLineChart() {
                 title: { display: true, text: metric.isPercentMetric ? 'Share of Total Faculty' : 'Faculty Count' },
                 ticks: { callback: (value) => metric.isPercentMetric ? value + '%' : value },
             },
+            faculty: {
+                type: 'linear',
+                position: 'right',
+                title: { display: showCompareCounts && metric.isPercentMetric, text: 'Total Faculty' },
+                display: showCompareCounts && metric.isPercentMetric,
+                grid: { drawOnChartArea: false },
+            },
         },
     };
 
@@ -1216,6 +1275,38 @@ function renderLineChart() {
         lineChart.setDatasetVisibility(index, !hiddenLineSeries.has(dataset.seriesKey));
     });
     lineChart.update();
+
+    // Slope summary strip
+    const compareSlopeStrip = document.getElementById('compareSlopeStrip');
+    if (compareSlopeStrip) {
+        const stripEntries = [];
+        const uconnTrend = trendRow(peerTrendData.uconn, metric.key);
+        if (uconnTrend?.slope !== null && uconnTrend?.slope !== undefined) {
+            stripEntries.push({ label: 'UConn', slope: uconnTrend.slope, color: workspaceColors.uconn, dash: false });
+        }
+        const focus = focusInstitution();
+        if (focus && focus !== peerTrendData.uconn) {
+            const focusTrend = trendRow(focus, metric.key);
+            if (focusTrend?.slope !== null && focusTrend?.slope !== undefined) {
+                const shortName = focus.replace(/^University (of|at) /i, '').substring(0, 24);
+                stripEntries.push({ label: shortName, slope: focusTrend.slope, color: workspaceColors.focus, dash: false });
+            }
+        }
+        enabledBenchmarks().forEach((bucket) => {
+            const bTrend = benchmarkTrend(bucket, metric);
+            if (bTrend?.slope !== null && bTrend?.slope !== undefined) {
+                stripEntries.push({ label: `${bucket} avg`, slope: bTrend.slope, color: workspaceColors[bucket] || workspaceColors.contextBorder, dash: true });
+            }
+        });
+        compareSlopeStrip.innerHTML = stripEntries.map(({ label, slope, color, dash }) => {
+            const swatchStyle = dash ? `background:none;border-top:2px dashed ${color};` : `background:${color};`;
+            return `<span class="slope-strip-item d-inline-flex align-items-center gap-1">`
+                + `<span class="slope-swatch" style="${swatchStyle}"></span>`
+                + `<span class="stat-strip-label">${label}</span>`
+                + `<span class="stat-strip-value">${formatSlope(slope, metric)}</span>`
+                + `</span>`;
+        }).join('');
+    }
 }
 
 function pointForInstitution(institution, xMetric, yMetricOrKey) {
@@ -1928,6 +2019,13 @@ if (metrics().length > 0) {
         renderWorkspace();
     }));
     outlookHorizonSelect.addEventListener('change', renderWorkspace);
+
+    document.getElementById('compareCountsBtn')?.addEventListener('click', function () {
+        showCompareCounts = !showCompareCounts;
+        this.classList.toggle('active', showCompareCounts);
+        renderWorkspace();
+    });
+
     setSelect.addEventListener('change', () => {
         updateModeControls();
         updatePeerOptions();
