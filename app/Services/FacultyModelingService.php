@@ -4,37 +4,46 @@ namespace App\Services;
 
 class FacultyModelingService
 {
-    private const END_YEAR = 2035;
-
-    /**
-     * Temporary placeholder transition matrix.
-     *
-     * This is intentionally explicit and readable so IR can replace it with the
-     * final matrix later without changing the rest of the modeling UI.
-     */
     private const TRANSITION_MATRIX = [
-   [0.7916, 0.0634, 0.0894, 0.0005, 0.0000, 0.0000, 0.0000, 0.0000],
-    [0.0000, 0.4784, 0.4328, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000],
-    [0.0000, 0.0000, 0.8843, 0.0214, 0.0000, 0.0717, 0.0000, 0.0000],
-    [0.0000, 0.0000, 0.0000, 0.7381, 0.1716, 0.0000, 0.0000, 0.0000],
-    [0.0000, 0.0000, 0.0000, 0.0000, 0.8361, 0.0000, 0.0000, 0.0000],
-    [0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.8900, 0.0779, 0.0000],
-    [0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.7628, 0.1836],
-    [0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.8586]
+        'Assistant' => [
+            'Assistant' => 0.8121,
+            'Associate' => 0.1251,
+            'Full' => 0.0,
+            'Exit' => 0.0628,
+        ],
+        'Associate' => [
+            'Assistant' => 0.0,
+            'Associate' => 0.895,
+            'Full' => 0.0653,
+            'Exit' => 0.0396,
+        ],
+        'Full' => [
+            'Assistant' => 0.0,
+            'Associate' => 0.0,
+            'Full' => 0.9359,
+            'Exit' => 0.0631,
+        ],
     ];
 
-    /**
-     * IR notebook-derived default hire mix.
-     */
-    private const NEW_HIRE_DISTRIBUTION = [
-        0.741,
-        0.000,
-        0.127,
-        0.000,
-        0.000,
-        0.086,
-        0.046,
-        0.000,
+    private const HIRE_PROBS = [
+        'historical' => [
+            'Assistant' => 0.7404129793510325,
+            'Associate' => 0.13569321533923304,
+            'Full' => 0.12389380530973451,
+        ],
+        'recent' => [
+            'Assistant' => 0.8082191780821918,
+            'Associate' => 0.0684931506849315,
+            'Full' => 0.1232876712328767,
+        ],
+    ];
+
+    private const BASELINE = [
+        'Assistant' => 247.0,
+        'Associate' => 381.0,
+        'Full' => 500.0,
+        'NTT' => 580.0,
+        'Students' => 27510.0,
     ];
 
     public function build(array $query = []): array
@@ -54,16 +63,9 @@ class FacultyModelingService
             'interpretation' => $this->interpretation($first, $latest),
             'comparisonRows' => $this->comparisonRows($first, $latest),
             'chartData' => $this->chartData($rows),
-            'baselineBadge' => $this->baselineBadge($selected['main']),
-            'isBaselineScenario' => $this->matchesScenario($selected['main'], $defaults['main']) && $this->matchesScenario($selected['advanced'], $defaults['advanced']),
             'scenarioSummary' => $this->scenarioSummary($selected),
-            'scenarioPresets' => $this->scenarioPresets($selected),
             'controlChoices' => $this->controlChoices(),
-            'advancedAssumptions' => $this->advancedAssumptions(
-                $selected['advanced'],
-                $selected['new_hire_distribution'],
-                $defaults['transition_matrix']
-            ),
+            'advancedAssumptions' => $this->advancedAssumptions($selected),
         ];
     }
 
@@ -71,68 +73,53 @@ class FacultyModelingService
     {
         return [
             'main' => [
-                'replacement_rate' => 0.5,
+                'hiring_model' => 'recent',
+                'ntt_replacement_probability' => 0.5,
+                'ntt_per_tenure_exit' => 0.25,
                 'student_growth_rate' => 0.0,
-                'ntt_student_faculty_ratio' => 16.4,
             ],
-            'advanced' => [
-                'baseline_year' => 2025,
-                'baseline_assistant' => 247.0,
-                'baseline_associate' => 378.0,
-                'baseline_full' => 493.0,
-                'baseline_ntt' => 566.0,
-                'baseline_student_fte' => 27510.0,
-                'tenure_system_student_faculty_ratio' => 15.4,
+            'settings' => [
+                'years_forward' => 10,
+                'start_year' => 2025,
             ],
-            'new_hire_distribution' => self::NEW_HIRE_DISTRIBUTION,
+            'baseline' => self::BASELINE,
             'transition_matrix' => self::TRANSITION_MATRIX,
+            'hire_probs' => self::HIRE_PROBS,
         ];
     }
 
     private function selectedInputs(array $query, array $defaults): array
     {
+        $hiringModel = is_string($query['hiring_model'] ?? null) ? strtolower((string) $query['hiring_model']) : $defaults['main']['hiring_model'];
+
+        if (! array_key_exists($hiringModel, self::HIRE_PROBS)) {
+            $hiringModel = $defaults['main']['hiring_model'];
+        }
+
         return [
             'main' => [
-                'replacement_rate' => $this->resolveChoice($query['replacement_rate'] ?? null, [0.0, 0.25, 0.5, 0.75, 1.0, 1.1], $defaults['main']['replacement_rate']),
-                'student_growth_rate' => $this->resolveChoice($query['student_growth_rate'] ?? null, [-0.01, 0.0, 0.01, 0.02], $defaults['main']['student_growth_rate']),
-                'ntt_student_faculty_ratio' => $this->resolveChoice($query['ntt_student_faculty_ratio'] ?? $query['ntt_per_tt_loss'] ?? null, [15.4, 16.4, 17.4, 18.4], $defaults['main']['ntt_student_faculty_ratio']),
+                'hiring_model' => $hiringModel,
+                'ntt_replacement_probability' => $this->resolveChoice(
+                    $query['ntt_replacement_probability'] ?? null,
+                    [0.0, 0.25, 0.5, 0.75, 1.0],
+                    $defaults['main']['ntt_replacement_probability']
+                ),
+                'ntt_per_tenure_exit' => $this->resolveChoice(
+                    $query['ntt_per_tenure_exit'] ?? null,
+                    [0.0, 0.25, 0.5, 0.75, 1.0],
+                    $defaults['main']['ntt_per_tenure_exit']
+                ),
+                'student_growth_rate' => $this->resolveChoice(
+                    $query['student_growth_rate'] ?? null,
+                    [-0.01, 0.0, 0.01, 0.02],
+                    $defaults['main']['student_growth_rate']
+                ),
             ],
-            'advanced' => [
-                'baseline_year' => $this->resolveInteger($query['baseline_year'] ?? null, $defaults['advanced']['baseline_year']),
-                'baseline_assistant' => $this->resolveNumeric($query['baseline_assistant'] ?? null, $defaults['advanced']['baseline_assistant']),
-                'baseline_associate' => $this->resolveNumeric($query['baseline_associate'] ?? null, $defaults['advanced']['baseline_associate']),
-                'baseline_full' => $this->resolveNumeric($query['baseline_full'] ?? null, $defaults['advanced']['baseline_full']),
-                'baseline_ntt' => $this->resolveNumeric($query['baseline_ntt'] ?? null, $defaults['advanced']['baseline_ntt']),
-                'baseline_student_fte' => $this->resolveNumeric($query['baseline_student_fte'] ?? null, $defaults['advanced']['baseline_student_fte']),
-                'tenure_system_student_faculty_ratio' => $this->resolveNumeric($query['tenure_system_student_faculty_ratio'] ?? null, $defaults['advanced']['tenure_system_student_faculty_ratio']),
-            ],
-            'new_hire_distribution' => $this->selectedNewHireDistribution($query, $defaults['new_hire_distribution']),
+            'settings' => $defaults['settings'],
+            'baseline' => $defaults['baseline'],
             'transition_matrix' => $defaults['transition_matrix'],
+            'hire_probs' => $defaults['hire_probs'],
         ];
-    }
-
-    private function selectedNewHireDistribution(array $query, array $defaultDistribution): array
-    {
-        $distribution = [];
-
-        foreach ($defaultDistribution as $index => $defaultValue) {
-            $percentageKey = 'hire_dist_pct_' . $index;
-            $ratioKey = 'hire_dist_' . $index;
-
-            if (is_numeric($query[$percentageKey] ?? null)) {
-                $distribution[$index] = max(0.0, ((float) $query[$percentageKey]) / 100);
-                continue;
-            }
-
-            $distribution[$index] = max(0.0, $this->resolveNumeric($query[$ratioKey] ?? null, (float) $defaultValue));
-        }
-
-        $sum = array_sum($distribution);
-        if ($sum <= 0.0) {
-            return $defaultDistribution;
-        }
-
-        return array_map(static fn(float $value): float => $value / $sum, $distribution);
     }
 
     private function resolveChoice(mixed $requested, array $availableValues, float $defaultTarget): float
@@ -140,16 +127,6 @@ class FacultyModelingService
         $target = is_numeric($requested) ? (float) $requested : $defaultTarget;
 
         return $this->nearestAvailableValue($target, $availableValues);
-    }
-
-    private function resolveNumeric(mixed $requested, float $default): float
-    {
-        return is_numeric($requested) ? (float) $requested : $default;
-    }
-
-    private function resolveInteger(mixed $requested, int $default): int
-    {
-        return is_numeric($requested) ? (int) round((float) $requested) : $default;
     }
 
     private function nearestAvailableValue(float $target, array $availableValues): float
@@ -176,151 +153,108 @@ class FacultyModelingService
 
     private function projectRows(array $selected): array
     {
-        $state = [
-            $selected['advanced']['baseline_assistant'],
-            0.0,
-            $selected['advanced']['baseline_associate'],
-            0.0,
-            0.0,
-            $selected['advanced']['baseline_full'],
-            0.0,
-            0.0,
-        ];
+        $assistant = (float) $selected['baseline']['Assistant'];
+        $associate = (float) $selected['baseline']['Associate'];
+        $full = (float) $selected['baseline']['Full'];
+        $ntt = (float) $selected['baseline']['NTT'];
+        $students = (float) $selected['baseline']['Students'];
 
-        $students = $selected['advanced']['baseline_student_fte'];
+        $startYear = (int) $selected['settings']['start_year'];
+        $endYear = $startYear + (int) $selected['settings']['years_forward'];
         $rows = [];
 
-        for ($year = $selected['advanced']['baseline_year']; $year <= self::END_YEAR; $year++) {
-            if ($year > $selected['advanced']['baseline_year']) {
-                $students *= (1 + $selected['main']['student_growth_rate']);
-
-                $surviving = $this->applyTransitionMatrix($state);
-                $facultyLoss = max(0.0, array_sum($state) - array_sum($surviving));
-                $replacementHires = $facultyLoss * $selected['main']['replacement_rate'];
-
-                $state = $this->addReplacementHires($surviving, $replacementHires, $selected['new_hire_distribution']);
-            }
-
-            $assistant = $state[0] + $state[1];
-            $associate = $state[2] + $state[3] + $state[4];
-            $full = $state[5] + $state[6] + $state[7];
+        for ($year = $startYear; $year <= $endYear; $year++) {
             $tenureSystem = $assistant + $associate + $full;
-
-            if ($year === $selected['advanced']['baseline_year']) {
-                $ntt = max(0.0, $selected['advanced']['baseline_ntt']);
-            } else {
-                $requiredNtt = ($students - ($tenureSystem * $selected['advanced']['tenure_system_student_faculty_ratio'])) / $selected['main']['ntt_student_faculty_ratio'];
-                $ntt = max(0.0, $requiredNtt);
-            }
             $totalFaculty = $tenureSystem + $ntt;
 
             $rows[] = [
                 'year' => $year,
-                'assistant' => $assistant,
-                'associate' => $associate,
-                'full' => $full,
-                'tenure_system' => $tenureSystem,
-                'ntt' => $ntt,
-                'total_faculty' => $totalFaculty,
-                'total_students' => $students,
-                'student_ntt_ratio' => $ntt > 0 ? $students / $ntt : null,
-                'student_faculty_ratio' => $totalFaculty > 0 ? $students / $totalFaculty : null,
+                'assistant' => round($assistant, 1),
+                'associate' => round($associate, 1),
+                'full' => round($full, 1),
+                'tenure_system' => round($tenureSystem, 1),
+                'ntt' => round($ntt, 1),
+                'total_faculty' => round($totalFaculty, 1),
+                'total_students' => round($students, 1),
+                'student_ntt_ratio' => $ntt > 0 ? round($students / $ntt, 1) : null,
+                'student_faculty_ratio' => $totalFaculty > 0 ? round($students / $totalFaculty, 1) : null,
             ];
+
+            if ($year === $endYear) {
+                break;
+            }
+
+            $transitionedAssistant =
+                ($assistant * self::TRANSITION_MATRIX['Assistant']['Assistant']) +
+                ($associate * self::TRANSITION_MATRIX['Associate']['Assistant']) +
+                ($full * self::TRANSITION_MATRIX['Full']['Assistant']);
+
+            $transitionedAssociate =
+                ($assistant * self::TRANSITION_MATRIX['Assistant']['Associate']) +
+                ($associate * self::TRANSITION_MATRIX['Associate']['Associate']) +
+                ($full * self::TRANSITION_MATRIX['Full']['Associate']);
+
+            $transitionedFull =
+                ($assistant * self::TRANSITION_MATRIX['Assistant']['Full']) +
+                ($associate * self::TRANSITION_MATRIX['Associate']['Full']) +
+                ($full * self::TRANSITION_MATRIX['Full']['Full']);
+
+            $assistantExits = $assistant * self::TRANSITION_MATRIX['Assistant']['Exit'];
+            $associateExits = $associate * self::TRANSITION_MATRIX['Associate']['Exit'];
+            $fullExits = $full * self::TRANSITION_MATRIX['Full']['Exit'];
+
+            $totalExits = $assistantExits + $associateExits + $fullExits;
+
+            $nttExits = $totalExits * $selected['main']['ntt_replacement_probability'];
+            $tenureExits = $totalExits * (1 - $selected['main']['ntt_replacement_probability']);
+
+            $ntt += $nttExits * $selected['main']['ntt_per_tenure_exit'];
+
+            $hirePattern = self::HIRE_PROBS[$selected['main']['hiring_model']];
+            $assistantHires = $hirePattern['Assistant'] * $tenureExits;
+            $associateHires = $hirePattern['Associate'] * $tenureExits;
+            $fullHires = $hirePattern['Full'] * $tenureExits;
+
+            $assistant = $transitionedAssistant + $assistantHires;
+            $associate = $transitionedAssociate + $associateHires;
+            $full = $transitionedFull + $fullHires;
+
+            $students *= (1 + $selected['main']['student_growth_rate']);
         }
 
         return $rows;
     }
 
-    private function applyTransitionMatrix(array $state): array
-    {
-        $next = array_fill(0, 8, 0.0);
-
-        foreach (self::TRANSITION_MATRIX as $fromIndex => $row) {
-            foreach ($row as $toIndex => $share) {
-                $next[$toIndex] += $state[$fromIndex] * $share;
-            }
-        }
-
-        return $next;
-    }
-
-    private function addReplacementHires(array $state, float $replacementHires, array $newHireDistribution): array
-    {
-        foreach ($newHireDistribution as $bucketIndex => $share) {
-            $state[$bucketIndex] += $replacementHires * $share;
-        }
-
-        return $state;
-    }
-
     private function scenarioSummary(array $selected): string
     {
-        $replacement = $this->formatPercent($selected['main']['replacement_rate']);
-        $growth = $this->formatPercent($selected['main']['student_growth_rate']);
-        $nttTarget = $this->formatRatioTarget($selected['main']['ntt_student_faculty_ratio']);
+        $hiring = ucfirst($selected['main']['hiring_model']);
+        $routedShare = $this->formatPercent($selected['main']['ntt_replacement_probability']);
+        $nttPerExit = rtrim(rtrim(number_format((float) $selected['main']['ntt_per_tenure_exit'], 2), '0'), '.');
+        $growth = $this->formatPercent($selected['main']['student_growth_rate'], true);
 
-        return 'Scenario assumes ' . $replacement . ' tenure-system replacement, ' .
-            $growth . ' annual student growth, and an NTT student/faculty target of ' .
-            $nttTarget . '.';
-    }
-
-    private function scenarioPresets(array $selected): array
-    {
-        $presets = [
-            'current_path' => [
-                'label' => 'Current path',
-                'description' => '50% replacement, no student growth, 16.4 NTT target',
-                'targets' => ['replacement_rate' => 0.5, 'student_growth_rate' => 0.0, 'ntt_student_faculty_ratio' => 16.4],
-            ],
-            'preserve_tenure_system' => [
-                'label' => 'Preserve tenure system',
-                'description' => '100% replacement, no student growth, 16.4 NTT target',
-                'targets' => ['replacement_rate' => 1.0, 'student_growth_rate' => 0.0, 'ntt_student_faculty_ratio' => 16.4],
-            ],
-            'instructional_pressure' => [
-                'label' => 'Instructional pressure',
-                'description' => '50% replacement, +1% growth, 16.4 NTT target',
-                'targets' => ['replacement_rate' => 0.5, 'student_growth_rate' => 0.01, 'ntt_student_faculty_ratio' => 16.4],
-            ],
-            'constrained_replacement' => [
-                'label' => 'Constrained replacement',
-                'description' => '25% replacement, no student growth, 16.4 NTT target',
-                'targets' => ['replacement_rate' => 0.25, 'student_growth_rate' => 0.0, 'ntt_student_faculty_ratio' => 16.4],
-            ],
-        ];
-
-        return array_map(function (array $preset) use ($selected) {
-            $resolved = $this->resolvePresetTargets($preset['targets']);
-
-            return [
-                'label' => $preset['label'],
-                'description' => $preset['description'],
-                'values' => $resolved,
-                'url' => route('modeling.index', $resolved),
-                'active' => $this->matchesScenario($selected['main'], $resolved),
-            ];
-        }, $presets);
-    }
-
-    private function resolvePresetTargets(array $targets): array
-    {
-        return [
-            'replacement_rate' => $this->nearestAvailableValue($targets['replacement_rate'], [0.0, 0.25, 0.5, 0.75, 1.0, 1.1]),
-            'student_growth_rate' => $this->nearestAvailableValue($targets['student_growth_rate'], [-0.01, 0.0, 0.01, 0.02]),
-            'ntt_student_faculty_ratio' => $this->nearestAvailableValue($targets['ntt_student_faculty_ratio'], [15.4, 16.4, 17.4, 18.4]),
-        ];
+        return 'Hiring pattern: ' . $hiring . '. Share of tenure-system exits routed to NTT capacity: ' . $routedShare . '. NTT faculty added per tenure-system exit: ' . $nttPerExit . '. Student growth rate: ' . $growth . '.';
     }
 
     private function controlChoices(): array
     {
         return [
-            'replacement_rate' => [
+            'hiring_model' => [
+                ['label' => 'Historical', 'value' => 'historical'],
+                ['label' => 'Recent', 'value' => 'recent'],
+            ],
+            'ntt_replacement_probability' => [
                 ['label' => '0%', 'value' => 0.0],
                 ['label' => '25%', 'value' => 0.25],
                 ['label' => '50%', 'value' => 0.5],
                 ['label' => '75%', 'value' => 0.75],
                 ['label' => '100%', 'value' => 1.0],
-                ['label' => '110%', 'value' => 1.1],
+            ],
+            'ntt_per_tenure_exit' => [
+                ['label' => '0', 'value' => 0.0],
+                ['label' => '0.25', 'value' => 0.25],
+                ['label' => '0.5', 'value' => 0.5],
+                ['label' => '0.75', 'value' => 0.75],
+                ['label' => '1.0', 'value' => 1.0],
             ],
             'student_growth_rate' => [
                 ['label' => '-1%', 'value' => -0.01],
@@ -328,86 +262,74 @@ class FacultyModelingService
                 ['label' => '+1%', 'value' => 0.01],
                 ['label' => '+2%', 'value' => 0.02],
             ],
-            'ntt_student_faculty_ratio' => [
-                ['label' => 'Lower load / more NTT needed', 'value' => 15.4],
-                ['label' => 'Current path', 'value' => 16.4],
-                ['label' => 'Higher load / fewer NTT needed', 'value' => 17.4],
-            ],
         ];
     }
 
-    private function advancedAssumptions(array $advanced, array $newHireDistribution, array $transitionMatrix): array
+    private function advancedAssumptions(array $selected): array
     {
-        $bucketLabels = [
-            'Assistant Professor <5 years',
-            'Assistant Professor 5+ years',
-            'Associate Professor <60',
-            'Associate Professor 60-64',
-            'Associate Professor 65+',
-            'Professor <60',
-            'Professor 60-64',
-            'Professor 65+',
-        ];
-
         return [
-            'baselineInputs' => [
-                ['name' => 'baseline_year', 'label' => 'Baseline year', 'value' => $advanced['baseline_year'], 'step' => 1],
-                ['name' => 'baseline_assistant', 'label' => 'Baseline Assistant Professors', 'value' => $advanced['baseline_assistant'], 'step' => 1],
-                ['name' => 'baseline_associate', 'label' => 'Baseline Associate Professors', 'value' => $advanced['baseline_associate'], 'step' => 1],
-                ['name' => 'baseline_full', 'label' => 'Baseline Full Professors', 'value' => $advanced['baseline_full'], 'step' => 1],
-                ['name' => 'baseline_ntt', 'label' => 'Baseline NTT faculty', 'value' => $advanced['baseline_ntt'], 'step' => 1],
-                ['name' => 'baseline_student_fte', 'label' => 'Baseline student FTE', 'value' => $advanced['baseline_student_fte'], 'step' => 1],
-                ['name' => 'tenure_system_student_faculty_ratio', 'label' => 'Tenure-system student/faculty ratio', 'value' => $advanced['tenure_system_student_faculty_ratio'], 'step' => 0.1],
+            'transitionMatrix' => self::TRANSITION_MATRIX,
+            'hiringProbabilities' => self::HIRE_PROBS,
+            'baseline' => [
+                'Assistant' => round((float) $selected['baseline']['Assistant'], 1),
+                'Associate' => round((float) $selected['baseline']['Associate'], 1),
+                'Full' => round((float) $selected['baseline']['Full'], 1),
+                'NTT' => round((float) $selected['baseline']['NTT'], 1),
+                'Students' => round((float) $selected['baseline']['Students'], 1),
             ],
-            'bucketLabels' => $bucketLabels,
-            'newHireDistribution' => array_map(
-                static fn(string $label, float $value): array => ['label' => $label, 'value' => $value],
-                $bucketLabels,
-                $newHireDistribution
-            ),
-            'transitionMatrix' => $transitionMatrix,
-            'transitionMatrixNote' => 'Transition assumptions are a temporary placeholder until IR provides/blesses the final transition matrix.',
+            'settings' => [
+                'start_year' => (int) $selected['settings']['start_year'],
+                'years_forward' => (int) $selected['settings']['years_forward'],
+            ],
+            'notes' => [
+                'ntt_replacement_probability' => 'This is the share of tenure-system exits routed to NTT capacity, not the number of NTT hires per exit.',
+                'ntt_per_tenure_exit' => 'This is the number of NTT faculty added per NTT-routed tenure-system exit.',
+            ],
         ];
     }
 
     private function summaryCards(array $latest): array
     {
         return [
-            ['label' => 'Assistant Professors', 'value' => $this->formatFaculty($latest['assistant']), 'description' => 'Latest modeled year'],
-            ['label' => 'Tenure-System Faculty', 'value' => $this->formatFaculty($latest['tenure_system']), 'description' => 'Assistant + associate + full'],
-            ['label' => 'NTT Faculty', 'value' => $this->formatFaculty($latest['ntt']), 'description' => 'Latest modeled year'],
-            ['label' => 'Total Faculty', 'value' => $this->formatFaculty($latest['total_faculty']), 'description' => 'Latest modeled year'],
-            ['label' => 'Student / Faculty Ratio', 'value' => $this->formatRatio($latest['student_faculty_ratio']), 'description' => 'Latest modeled year'],
+            ['label' => 'Assistant', 'value' => $this->formatValue($latest['assistant'], 1)],
+            ['label' => 'Associate', 'value' => $this->formatValue($latest['associate'], 1)],
+            ['label' => 'Full', 'value' => $this->formatValue($latest['full'], 1)],
+            ['label' => 'Tenure-System', 'value' => $this->formatValue($latest['tenure_system'], 1)],
+            ['label' => 'NTT', 'value' => $this->formatValue($latest['ntt'], 1)],
+            ['label' => 'Student / Faculty Ratio', 'value' => $this->formatValue($latest['student_faculty_ratio'], 1)],
         ];
     }
 
     private function interpretation(array $first, array $last): array
     {
-        $assistantChangePct = $this->percentChange($first['assistant'], $last['assistant']);
-        $tenureSystemChangePct = $this->percentChange($first['tenure_system'], $last['tenure_system']);
-        $nttChangePct = $this->percentChange($first['ntt'], $last['ntt']);
-        $studentFacultyRatioChange = (float) $last['student_faculty_ratio'] - (float) $first['student_faculty_ratio'];
-
         $messages = [];
 
-        if ($assistantChangePct <= -25) {
-            $messages[] = 'Assistant professor pipeline declines substantially.';
+        $tenureChange = $this->percentChange($first['tenure_system'], $last['tenure_system']);
+        $nttChange = $this->percentChange($first['ntt'], $last['ntt']);
+        $ratioChange = (float) ($last['student_faculty_ratio'] ?? 0.0) - (float) ($first['student_faculty_ratio'] ?? 0.0);
+
+        if ($tenureChange < -5) {
+            $messages[] = 'Tenure-system faculty declines over the modeled horizon.';
+        } elseif ($tenureChange > 5) {
+            $messages[] = 'Tenure-system faculty grows over the modeled horizon.';
+        } else {
+            $messages[] = 'Tenure-system faculty remains comparatively stable.';
         }
 
-        if ($tenureSystemChangePct <= -10) {
-            $messages[] = 'Tenure-system capacity declines.';
+        if ($nttChange > 5) {
+            $messages[] = 'NTT faculty grows as exits are routed into NTT capacity.';
+        } elseif ($nttChange < -5) {
+            $messages[] = 'NTT faculty declines relative to baseline.';
+        } else {
+            $messages[] = 'NTT faculty remains close to baseline levels.';
         }
 
-        if ($nttChangePct >= 25) {
-            $messages[] = 'Reliance on non-tenure faculty increases.';
-        }
-
-        if ($studentFacultyRatioChange > 0) {
-            $messages[] = 'Instructional pressure increases.';
-        }
-
-        if (empty($messages)) {
-            $messages[] = 'The selected scenario produces relatively stable modeled outcomes.';
+        if ($ratioChange > 0.05) {
+            $messages[] = 'Student/faculty ratio rises, indicating higher instructional pressure.';
+        } elseif ($ratioChange < -0.05) {
+            $messages[] = 'Student/faculty ratio falls, indicating lower instructional pressure.';
+        } else {
+            $messages[] = 'Student/faculty ratio stays near baseline.';
         }
 
         return [
@@ -426,9 +348,9 @@ class FacultyModelingService
             $this->comparisonRow('Tenure-System', $first['tenure_system'], $last['tenure_system'], 1),
             $this->comparisonRow('NTT', $first['ntt'], $last['ntt'], 1),
             $this->comparisonRow('Total Faculty', $first['total_faculty'], $last['total_faculty'], 1),
-            $this->comparisonRow('Total Students', $first['total_students'], $last['total_students'], 0),
-            $this->comparisonRow('Student / Faculty Ratio', $first['student_faculty_ratio'], $last['student_faculty_ratio'], 2),
-            $this->comparisonRow('Student / NTT Ratio', $first['student_ntt_ratio'], $last['student_ntt_ratio'], 2),
+            $this->comparisonRow('Students', $first['total_students'], $last['total_students'], 1),
+            $this->comparisonRow('Students / NTT', $first['student_ntt_ratio'], $last['student_ntt_ratio'], 1),
+            $this->comparisonRow('Student / Faculty Ratio', $first['student_faculty_ratio'], $last['student_faculty_ratio'], 1),
         ];
     }
 
@@ -452,17 +374,17 @@ class FacultyModelingService
         return [
             'labels' => array_map(static fn(array $row) => $row['year'], $rows),
             'tenureVsNtt' => [
-                $this->series($rows, 'Tenure-System', 'tenure_system', '#0d6efd'),
-                $this->series($rows, 'NTT', 'ntt', '#dc3545'),
+                $this->series($rows, 'Tenure-System', 'tenure_system', '#0f766e'),
+                $this->series($rows, 'NTT', 'ntt', '#f97316'),
             ],
             'pipeline' => [
-                $this->series($rows, 'Assistant', 'assistant', '#0d6efd'),
-                $this->series($rows, 'Associate', 'associate', '#198754'),
-                $this->series($rows, 'Full', 'full', '#7c3aed'),
+                $this->series($rows, 'Assistant', 'assistant', '#2563eb'),
+                $this->series($rows, 'Associate', 'associate', '#16a34a'),
+                $this->series($rows, 'Full', 'full', '#dc2626'),
             ],
             'ratios' => [
-                $this->series($rows, 'Student / Faculty', 'student_faculty_ratio', '#0891b2'),
-                $this->series($rows, 'Student / NTT', 'student_ntt_ratio', '#b45309'),
+                $this->series($rows, 'Student / Faculty Ratio', 'student_faculty_ratio', '#0ea5e9'),
+                $this->series($rows, 'Students / NTT', 'student_ntt_ratio', '#a16207'),
             ],
         ];
     }
@@ -479,13 +401,6 @@ class FacultyModelingService
         ];
     }
 
-    private function baselineBadge(array $main): string
-    {
-        return 'Baseline: ' . $this->formatPercent($main['replacement_rate']) . ' replacement, ' .
-            $this->formatPercent($main['student_growth_rate'], false) . ' student growth, ' .
-            $this->formatRatioTarget($main['ntt_student_faculty_ratio']) . ' NTT S/F target';
-    }
-
     private function formatValue(float|int|null $value, int $decimals = 1): string
     {
         if ($value === null) {
@@ -493,29 +408,6 @@ class FacultyModelingService
         }
 
         return number_format((float) $value, $decimals);
-    }
-
-    private function formatFaculty(float|int|null $value): string
-    {
-        return $this->formatValue($value, 1);
-    }
-
-    private function formatRatio(float|int|null $value): string
-    {
-        return $this->formatValue($value, 2);
-    }
-
-    private function formatPercent(float|int $value, bool $signed = false): string
-    {
-        $value = (float) $value * 100;
-        $prefix = $signed && $value > 0 ? '+' : '';
-
-        return $prefix . rtrim(rtrim(number_format($value, 1), '0'), '.') . '%';
-    }
-
-    private function formatRatioTarget(float|int $value): string
-    {
-        return rtrim(rtrim(number_format((float) $value, 1), '0'), '.');
     }
 
     private function formatSignedValue(float|int|null $value, int $decimals = 1): string
@@ -542,6 +434,14 @@ class FacultyModelingService
         return $prefix . number_format($change, 1) . '%';
     }
 
+    private function formatPercent(float|int $value, bool $signed = false): string
+    {
+        $value = (float) $value * 100;
+        $prefix = $signed && $value > 0 ? '+' : '';
+
+        return $prefix . rtrim(rtrim(number_format($value, 1), '0'), '.') . '%';
+    }
+
     private function percentChange(float|int|null $baseline, float|int|null $latest): float
     {
         if ($baseline === null || (float) $baseline === 0.0) {
@@ -549,16 +449,5 @@ class FacultyModelingService
         }
 
         return (((float) $latest - (float) $baseline) / (float) $baseline) * 100;
-    }
-
-    private function matchesScenario(array $selected, array $defaults): bool
-    {
-        foreach ($defaults as $key => $defaultValue) {
-            if (abs((float) $selected[$key] - (float) $defaultValue) > 1e-9) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }
