@@ -199,21 +199,25 @@ class FacultyTrendController extends Controller
             'composite' => [
                 'label' => 'Composite',
                 'column' => 'composite_similarity_rank',
+                'distanceColumn' => 'composite_similarity_score',
                 'description' => 'Best default peer list. Blends multiple similarity approaches so the result is broad enough to be useful and still explainable.',
             ],
             'nine_d' => [
                 'label' => 'Detailed Cell Similarity',
                 'column' => 'detailed_cell_similarity_rank',
+                'distanceColumn' => 'detailed_cell_euclidean_distance',
                 'description' => 'Compares the full faculty composition profile across detailed cell dimensions (tenure-status × rank). This replaces the prior 9D approach and is more granular.',
             ],
             'tenure' => [
                 'label' => 'Tenure-System',
                 'column' => 'tenure_similarity_rank',
+                'distanceColumn' => 'tenure_euclidean_distance',
                 'description' => 'Compares only tenure status mix: tenured, tenure-track, and non-tenure faculty.',
             ],
             'rank' => [
                 'label' => 'Rank',
                 'column' => 'rank_similarity_rank',
+                'distanceColumn' => 'rank_euclidean_distance',
                 'description' => 'Compares only faculty rank mix: assistant, associate, and full professor.',
             ],
         ];
@@ -522,6 +526,15 @@ class FacultyTrendController extends Controller
             'totalFaculty' => $summary->total_faculty,
             'latestYear' => $summary->year,
             'usNewsRank' => $ranksByUnitid && $summary->unitid ? ($ranksByUnitid->get((string) $summary->unitid) ?? null) : null,
+            'detailedCellEuclideanDistance' => $similarityMeta?->detailed_cell_euclidean_distance !== null
+                ? round((float) $similarityMeta->detailed_cell_euclidean_distance, 4)
+                : null,
+            'tenureEuclideanDistance' => $similarityMeta?->tenure_euclidean_distance !== null
+                ? round((float) $similarityMeta->tenure_euclidean_distance, 4)
+                : null,
+            'rankEuclideanDistance' => $similarityMeta?->rank_euclidean_distance !== null
+                ? round((float) $similarityMeta->rank_euclidean_distance, 4)
+                : null,
             'fullProfileDistance' => $similarityMeta?->detailed_cell_euclidean_distance !== null
                 ? round((float) $similarityMeta->detailed_cell_euclidean_distance, 4)
                 : null,
@@ -780,8 +793,8 @@ class FacultyTrendController extends Controller
                     return [
                         'institution' => $row->institution,
                         'rank' => $row->{$dimension['column']},
-                        'distance' => $row->detailed_cell_euclidean_distance !== null
-                            ? round((float) $row->detailed_cell_euclidean_distance, 4)
+                        'distance' => isset($dimension['distanceColumn']) && $row->{$dimension['distanceColumn']} !== null
+                            ? round((float) $row->{$dimension['distanceColumn']}, 4)
                             : null,
                         'source' => 'current',
                         'sector' => $row->sector,

@@ -2039,11 +2039,17 @@ function renderProfileDistanceMatrix() {
         return;
     }
 
-    const rankedSetColumns = Object.entries(peerTrendData.sets || {})
-        .filter(([key, set]) => key !== 'aau_publics' && key !== 'rank_band' && Array.isArray(set.institutions))
-        .map(([key, set]) => ({ key, label: set.label }));
+    const distanceColumns = [
+        { key: 'detailedCellEuclideanDistance', label: 'detailed_cell_euclidean_distance' },
+        { key: 'tenureEuclideanDistance', label: 'tenure_euclidean_distance' },
+        { key: 'rankEuclideanDistance', label: 'rank_euclidean_distance' },
+    ];
 
-    if (rankedSetColumns.length === 0) {
+    const hasDistanceData = (peerTrendData.allInstitutions || []).some((row) =>
+        distanceColumns.some((column) => row?.[column.key] !== null && row?.[column.key] !== undefined)
+    );
+
+    if (!hasDistanceData) {
         container.innerHTML = '';
         return;
     }
@@ -2060,18 +2066,17 @@ function renderProfileDistanceMatrix() {
     ];
 
     const fmtDist = (v) => v !== null && v !== undefined ? Number(v).toFixed(4) : '—';
-    const header = rankedSetColumns
+    const header = distanceColumns
         .map((column) => `<th class="text-end">${escapeHtml(column.label)}</th>`)
         .join('');
 
     const rows = benchmarkRows.map((benchmark) => {
-        const cells = rankedSetColumns.map((column) => {
-            const institutions = (peerTrendData.sets?.[column.key]?.institutions || [])
-                .map((entry) => allInstitutionMap.get(entry.institution) || null)
-                .filter((row) => row && row.institution !== peerTrendData.uconn && benchmark.matches(row));
+        const benchmarkInstitutions = (peerTrendData.allInstitutions || [])
+            .filter((row) => row?.institution !== peerTrendData.uconn && benchmark.matches(row));
 
-            const values = institutions
-                .map((row) => row.fullProfileDistance)
+        const cells = distanceColumns.map((column) => {
+            const values = benchmarkInstitutions
+                .map((row) => row?.[column.key])
                 .filter((value) => value !== null && value !== undefined)
                 .map((value) => Number(value));
 
@@ -2088,7 +2093,7 @@ function renderProfileDistanceMatrix() {
     container.innerHTML = `
         <div class="card mb-4">
             <div class="card-header card-header-brand">
-                <div class="fw-semibold">Average Full-Profile Distance from UConn</div>
+                <div class="fw-semibold">Average Euclidean Distances from UConn</div>
             </div>
             <div class="table-responsive">
                 <table class="table table-sm table-hover table-custom mb-0">
