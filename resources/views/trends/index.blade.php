@@ -704,6 +704,26 @@ function benchmarkRows(bucket, metric) {
     return peerTrendData.benchmarks?.[bucket]?.series?.[metric.key] || [];
 }
 
+function benchmarkHistoryDash(bucket) {
+    if (bucket === 'AAU_PUBLIC') {
+        return [2, 4];
+    }
+
+    return bucket === 'R2' ? [4, 4] : [14, 5];
+}
+
+function benchmarkOutlookDash(bucket) {
+    if (bucket === 'AAU_PUBLIC') {
+        return [1, 4];
+    }
+
+    return bucket === 'R2' ? [2, 4, 8, 4] : [8, 4, 2, 4];
+}
+
+function benchmarkColor(bucket) {
+    return workspaceColors[bucket] || workspaceColors.contextBorder;
+}
+
 function visibleInstitutions() {
     const focus = focusInstitution();
     const contextLimit = isCustomMode() ? 4 : 5;
@@ -1091,12 +1111,12 @@ function lineDatasets(metric, showCounts = false) {
 
     const benchmarkDatasets = enabledBenchmarks().flatMap((bucket) => {
         const benchmark = peerTrendData.benchmarks?.[bucket] || { label: `${bucket} average` };
-        const color = workspaceColors[bucket] || workspaceColors.contextBorder;
+        const color = benchmarkColor(bucket);
         const rows = benchmarkRows(bucket, metric);
         const trend = benchmarkTrend(bucket, metric);
         const seriesKey = `benchmark:${bucket}:${metric.key}`;
-        const historyDash = bucket === 'R2' ? [4, 4] : [14, 5];
-        const outlookDash = bucket === 'R2' ? [2, 4, 8, 4] : [8, 4, 2, 4];
+        const historyDash = benchmarkHistoryDash(bucket);
+        const outlookDash = benchmarkOutlookDash(bucket);
 
         if (rows.length === 0) {
             return [];
@@ -1792,9 +1812,9 @@ function renderProfileChart() {
     }).flat();
 
     enabledBenchmarkKeys.forEach((bucket) => {
-        const benchmarkColor = bucket === 'R1' ? '#a21caf' : '#0891b2';
-        const benchmarkDash = bucket === 'R2' ? [4, 4] : [14, 5];
-        const outlookDash = bucket === 'R2' ? [2, 4, 8, 4] : [8, 4, 2, 4];
+        const color = benchmarkColor(bucket);
+        const benchmarkDash = benchmarkHistoryDash(bucket);
+        const outlookDash = benchmarkOutlookDash(bucket);
         seriesDefs.forEach((def) => {
             const rows = peerTrendData.benchmarks?.[bucket]?.series?.[def.key] || [];
             if (!rows.length) return;
@@ -1804,8 +1824,8 @@ function renderProfileChart() {
             const historyBase = {
                 label: `${bucket} avg (${def.label})`,
                 data: validRows.map((r) => ({ x: r.year, y: r.value })),
-                borderColor: benchmarkColor,
-                backgroundColor: benchmarkColor,
+                borderColor: color,
+                backgroundColor: color,
                 borderDash: benchmarkDash,
                 borderWidth: 2,
                 pointRadius: 2,
