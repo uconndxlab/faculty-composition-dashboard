@@ -365,14 +365,18 @@ class FacultyTrendController extends Controller
         $latestByYear = $uconnRows->keyBy('year')->map(fn($row) => $this->summaryForProfile($row))->toArray();
         $profileSeries = $this->buildProfileSeries($uconnRows);
 
+        $availableMetrics = $this->metricCatalog($metricLabels, $summaryRows);
+        $defaultMetric = collect($availableMetrics)->firstWhere('key', 'pct_non_tenure')['key']
+            ?? ($availableMetrics[0]['key'] ?? 'pct_non_tenure');
+
         return [
             'uconn' => self::UCONN,
             'latestYear' => $latestYear,
             'uconnRank' => $uconnRank,
             'uconnUnitid' => $uconnUnitid,
-            'defaultMetric' => 'pct_non_tenure',
+            'defaultMetric' => $defaultMetric,
             'defaultSet' => count($trajectorySet) > 0 ? 'trajectory' : 'current_composite',
-            'metrics' => $this->metricCatalog($metricLabels),
+            'metrics' => $availableMetrics,
             'sets' => $sets,
             'allInstitutions' => $allInstitutions->toArray(),
             'benchmarks' => $this->benchmarkSeries(),
@@ -766,9 +770,19 @@ class FacultyTrendController extends Controller
         });
     }
 
-    private function metricCatalog(array $metricLabels): array
+    private function metricCatalog(array $metricLabels, ?Collection $rows = null): array
     {
-        return collect(self::DEFAULT_METRICS)->map(function (string $metric) use ($metricLabels) {
+        $availableMetrics = collect(self::DEFAULT_METRICS);
+
+        if ($rows !== null) {
+            $availableMetrics = $availableMetrics->filter(function (string $metric) use ($rows) {
+                $column = self::METRICS[$metric]['summaryColumn'];
+
+                return $rows->contains(fn(FacultySummary $row) => $row->{$column} !== null);
+            })->values();
+        }
+
+        return $availableMetrics->map(function (string $metric) use ($metricLabels) {
             $definition = self::METRICS[$metric];
 
             return [
