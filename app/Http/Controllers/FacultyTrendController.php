@@ -507,30 +507,39 @@ class FacultyTrendController extends Controller
 
     private function benchmarkSeries(): array
     {
-        $rows = FacultySummary::whereNotNull('carnegie_classification')
-            ->whereNotNull('year')
+        $summaries = FacultySummary::whereNotNull('year')
             ->orderBy('year')
-            ->get()
-            ->map(function (FacultySummary $summary) {
-                $bucket = $this->benchmarkBucket($summary->carnegie_classification);
+            ->get();
 
-                return $bucket ? ['bucket' => $bucket, 'summary' => $summary] : null;
-            })
-            ->filter();
+        [$aauUnitids, $aauNames] = $this->aauPublicInstitutionLookup();
 
-        return collect(['R1' => 'R1 average', 'R2' => 'R2 average'])
-            ->mapWithKeys(function (string $label, string $bucket) use ($rows) {
-                $bucketRows = $rows
-                    ->filter(fn(array $row) => $row['bucket'] === $bucket)
-                    ->pluck('summary')
-                    ->groupBy('year')
-                    ->sortKeys();
+        $bucketRows = [
+            'R1' => $summaries
+                ->filter(fn(FacultySummary $summary) => $this->benchmarkBucket($summary->carnegie_classification) === 'R1')
+                ->groupBy('year')
+                ->sortKeys(),
+            'R2' => $summaries
+                ->filter(fn(FacultySummary $summary) => $this->benchmarkBucket($summary->carnegie_classification) === 'R2')
+                ->groupBy('year')
+                ->sortKeys(),
+            'AAU_PUBLIC' => $summaries
+                ->filter(fn(FacultySummary $summary) => $this->isAauPublicSummary($summary, $aauUnitids, $aauNames))
+                ->groupBy('year')
+                ->sortKeys(),
+        ];
+
+        return collect([
+            'R1' => 'R1 average',
+            'R2' => 'R2 average',
+            'AAU_PUBLIC' => 'AAU Public average',
+        ])->mapWithKeys(function (string $label, string $bucket) use ($bucketRows) {
+                $rowsForBucket = $bucketRows[$bucket] ?? collect();
 
                 $series = [];
 
                 foreach (self::DEFAULT_METRICS as $metric) {
                     $definition = self::METRICS[$metric];
-                    $series[$metric] = $bucketRows->map(function (Collection $yearRows, int $year) use ($definition) {
+                    $series[$metric] = $rowsForBucket->map(function (Collection $yearRows, int $year) use ($definition) {
                         $values = $yearRows
                             ->pluck($definition['summaryColumn'])
                             ->filter(fn($value) => $value !== null)
@@ -561,6 +570,50 @@ class FacultyTrendController extends Controller
                 ];
             })
             ->toArray();
+    }
+
+    /**
+     * @return array{0:Collection<int, string>,1:Collection<int, string>}
+     */
+    private function aauPublicInstitutionLookup(): array
+    {
+        if (! Schema::hasTable('institutions')) {
+            return [collect(), collect()];
+        }
+
+        $aauInstitutions = Institution::query()
+            ->where('is_aau_public', true)
+            ->where(function ($query) {
+                $query->where('is_public', true)
+                    ->orWhere('public_private', 'Public');
+            })
+            ->get();
+
+        $unitids = $aauInstitutions
+            ->pluck('unitid')
+            ->filter()
+            ->map(fn($value) => (string) $value)
+            ->values();
+
+        $names = $aauInstitutions
+            ->pluck('name')
+            ->filter()
+            ->map(fn($value) => strtolower(trim((string) $value)))
+            ->values();
+
+        return [$unitids, $names];
+    }
+
+    private function isAauPublicSummary(FacultySummary $summary, Collection $aauUnitids, Collection $aauNames): bool
+    {
+        $unitid = $summary->unitid ? (string) $summary->unitid : null;
+        if ($unitid && $aauUnitids->contains($unitid)) {
+            return true;
+        }
+
+        $name = strtolower(trim((string) $summary->institution));
+
+        return $name !== '' && $aauNames->contains($name);
     }
 
     private function benchmarkBucket(?string $carnegieClassification): ?string
@@ -772,6 +825,7 @@ class FacultyTrendController extends Controller
             'benchmarks' => [
                 'R1' => ['label' => 'R1 average', 'series' => []],
                 'R2' => ['label' => 'R2 average', 'series' => []],
+                'AAU_PUBLIC' => ['label' => 'AAU Public average', 'series' => []],
             ],
             'series' => [],
             'latest' => [],

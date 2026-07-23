@@ -94,6 +94,10 @@
                         <input class="form-check-input profile-benchmark-toggle" type="checkbox" value="R2" id="profileBenchmarkR2">
                         <label class="form-check-label fw-semibold" for="profileBenchmarkR2">R2 average</label>
                     </div>
+                    <div class="form-check">
+                        <input class="form-check-input profile-benchmark-toggle" type="checkbox" value="AAU_PUBLIC" id="profileBenchmarkAauPublic">
+                        <label class="form-check-label fw-semibold" for="profileBenchmarkAauPublic">AAU Public average</label>
+                    </div>
                 </div>
                 <p class="kpi-note mt-2">Share metrics use average; faculty counts use median.</p>
             </div>
@@ -148,6 +152,10 @@
                     <div class="form-check">
                         <input class="form-check-input benchmark-toggle" type="checkbox" value="R2" id="benchmarkR2">
                         <label class="form-check-label fw-semibold" for="benchmarkR2">R2 average</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input benchmark-toggle" type="checkbox" value="AAU_PUBLIC" id="benchmarkAauPublic">
+                        <label class="form-check-label fw-semibold" for="benchmarkAauPublic">AAU Public average</label>
                     </div>
                 </div>
                 <p class="kpi-note mt-2">Share metrics use average; faculty counts use median.</p>
@@ -498,6 +506,7 @@ const workspaceColors = {
     contextBorder: 'rgba(108, 117, 125, 0.8)',
     R1: '#a21caf',
     R2: '#0891b2',
+    AAU_PUBLIC: '#0f766e',
 };
 
 // ── DOM refs ────────────────────────────────────────────────────────────────
