@@ -18,6 +18,7 @@
     $navItems = [
         ['label' => 'Workspace', 'short' => 'W', 'href' => url('/'), 'active' => request()->is('/') || request()->is('trends')],
         ['label' => 'Modeling', 'short' => 'M', 'href' => url('/modeling'), 'active' => request()->is('modeling')],
+        ['label' => 'Institutions', 'short' => 'S', 'href' => route('institutions.index'), 'active' => request()->is('institutions*')],
         ['label' => 'Imports', 'short' => 'I', 'href' => url('/imports'), 'active' => request()->is('imports')],
     ];
 @endphp

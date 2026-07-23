@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FacultySummary;
 use App\Models\FacultyTrend;
+use App\Models\Institution;
 use App\Models\InstitutionalRanking;
 use App\Models\SimilarityRanking;
 use App\Models\TrajectorySimilarity;
@@ -251,6 +252,18 @@ class FacultyTrendController extends Controller
             return $this->emptyPeerTrendData($metricLabels, $rankDimensions);
         }
 
+        $institutionMetaByUnitid = collect();
+        $institutionMetaByName = collect();
+        if (Schema::hasTable('institutions')) {
+            $institutionMeta = Institution::all();
+            $institutionMetaByUnitid = $institutionMeta
+                ->filter(fn(Institution $institution) => ! empty($institution->unitid))
+                ->keyBy(fn(Institution $institution) => (string) $institution->unitid);
+            $institutionMetaByName = $institutionMeta
+                ->filter(fn(Institution $institution) => ! empty($institution->name))
+                ->keyBy(fn(Institution $institution) => strtolower(trim((string) $institution->name)));
+        }
+
         $ranksByUnitid = Schema::hasTable('institutional_rankings')
             ? InstitutionalRanking::whereNotNull('unitid')->pluck('top_public_rank_nat_univ', 'unitid')
             : collect();
@@ -258,12 +271,15 @@ class FacultyTrendController extends Controller
         $uconnUnitid = FacultySummary::where('institution', self::UCONN)->whereNotNull('unitid')->value('unitid');
         $uconnRank = $uconnUnitid ? ($ranksByUnitid->get((string) $uconnUnitid) ?? null) : null;
 
-        $currentSets = $this->currentPeerSets($rankDimensions);
+        $currentSets = $this->currentPeerSets($rankDimensions, $institutionMetaByUnitid, $institutionMetaByName);
         $trajectorySet = $trajectories->map(fn($row) => [
             'institution' => $row->institution,
             'rank' => $row->trajectory_similarity_rank,
             'source' => 'trajectory',
             'sector' => $row->sector,
+            'publicPrivate' => $row->public_private,
+            'isPublic' => $row->is_public !== null ? (bool) $row->is_public : null,
+            'isAauPublic' => $this->institutionIsAauPublic($row->unitid, $row->institution, $institutionMetaByUnitid, $institutionMetaByName),
             'carnegie' => $row->carnegie_classification,
             'distance' => $row->trajectory_distance_from_uconn !== null ? round((float) $row->trajectory_distance_from_uconn, 4) : null,
         ])->values()->toArray();
@@ -277,21 +293,45 @@ class FacultyTrendController extends Controller
             ],
         ];
 
+        $allInstitutions = FacultySummary::whereNotNull('institution')
+            ->orderBy('institution')
+            ->orderByDesc('year')
+            ->get()
+            ->unique('institution')
+            ->map(fn(FacultySummary $row) => $this->institutionOptionForWorkspace($row, $ranksByUnitid, $institutionMetaByUnitid, $institutionMetaByName))
+            ->values();
+
+        $aauPublicSetRows = $allInstitutions
+            ->filter(fn(array $row) => ($row['isAauPublic'] ?? false) === true && ($row['publicPrivate'] ?? null) === 'Public' && ($row['institution'] ?? null) !== self::UCONN)
+            ->sortBy('usNewsRank')
+            ->values()
+            ->map(function (array $row, int $index) {
+                return [
+                    'institution' => $row['institution'],
+                    'rank' => $row['usNewsRank'] ?? ($index + 1),
+                    'source' => 'aau_publics',
+                    'sector' => $row['sector'],
+                    'publicPrivate' => $row['publicPrivate'] ?? null,
+                    'isPublic' => $row['isPublic'] ?? null,
+                    'isAauPublic' => $row['isAauPublic'] ?? false,
+                    'carnegie' => $row['carnegie'],
+                    'totalFaculty' => $row['totalFaculty'],
+                ];
+            })
+            ->toArray();
+
         $sets = collect([
             'trajectory' => [
                 'label' => 'Trajectory-Similar Peers',
                 'description' => 'Institutions changing in similar directions and at similar rates.',
                 'institutions' => $trajectorySet,
             ],
+            'aau_publics' => [
+                'label' => 'AAU Publics',
+                'description' => 'Institutions marked as AAU publics through institution management and classified as public.',
+                'institutions' => $aauPublicSetRows,
+            ],
         ])->merge($currentSets)->merge($rankBandSet)->toArray();
-
-        $allInstitutions = FacultySummary::whereNotNull('institution')
-            ->orderBy('institution')
-            ->orderByDesc('year')
-            ->get()
-            ->unique('institution')
-            ->map(fn(FacultySummary $row) => $this->institutionOptionForWorkspace($row, $ranksByUnitid))
-            ->values();
 
         $institutions = collect([self::UCONN])
             ->merge(collect($sets)->flatMap(fn($set) => collect($set['institutions'])->pluck('institution')))
@@ -437,12 +477,27 @@ class FacultyTrendController extends Controller
             ->values();
     }
 
-    private function institutionOptionForWorkspace(FacultySummary $summary, Collection $ranksByUnitid = null): array
+    private function institutionOptionForWorkspace(
+        FacultySummary $summary,
+        ?Collection $ranksByUnitid = null,
+        ?Collection $institutionMetaByUnitid = null,
+        ?Collection $institutionMetaByName = null
+    ): array
     {
+        $institutionMeta = $this->institutionMetadata($summary->unitid, $summary->institution, $institutionMetaByUnitid, $institutionMetaByName);
+        $publicPrivate = $institutionMeta?->public_private ?? $summary->public_private;
+        $isPublic = $institutionMeta?->is_public;
+        if ($isPublic === null) {
+            $isPublic = $summary->is_public;
+        }
+
         return [
             'institution' => $summary->institution,
             'unitid' => $summary->unitid,
             'sector' => $summary->sector,
+            'publicPrivate' => $publicPrivate,
+            'isPublic' => $isPublic !== null ? (bool) $isPublic : null,
+            'isAauPublic' => (bool) ($institutionMeta?->is_aau_public ?? false),
             'carnegie' => $summary->carnegie_classification,
             'totalFaculty' => $summary->total_faculty,
             'latestYear' => $summary->year,
@@ -523,25 +578,32 @@ class FacultyTrendController extends Controller
         };
     }
 
-    private function currentPeerSets(array $rankDimensions): Collection
+    private function currentPeerSets(array $rankDimensions, ?Collection $institutionMetaByUnitid = null, ?Collection $institutionMetaByName = null): Collection
     {
         if (! Schema::hasTable('similarity_rankings')) {
             return collect();
         }
 
-        return collect($rankDimensions)->mapWithKeys(function (array $dimension, string $key) {
+        return collect($rankDimensions)->mapWithKeys(function (array $dimension, string $key) use ($institutionMetaByUnitid, $institutionMetaByName) {
             $rows = SimilarityRanking::whereNotNull($dimension['column'])
                 ->orderBy($dimension['column'])
                 ->limit(15)
                 ->get()
-                ->map(fn($row) => [
-                    'institution' => $row->institution,
-                    'rank' => $row->{$dimension['column']},
-                    'source' => 'current',
-                    'sector' => $row->sector,
-                    'carnegie' => $row->carnegie_classification,
-                    'totalFaculty' => $row->total_faculty,
-                ])
+                ->map(function ($row) use ($dimension, $institutionMetaByUnitid, $institutionMetaByName) {
+                    $institutionMeta = $this->institutionMetadata($row->unitid, $row->institution, $institutionMetaByUnitid, $institutionMetaByName);
+
+                    return [
+                        'institution' => $row->institution,
+                        'rank' => $row->{$dimension['column']},
+                        'source' => 'current',
+                        'sector' => $row->sector,
+                        'publicPrivate' => $institutionMeta?->public_private ?? $row->public_private,
+                        'isPublic' => $institutionMeta?->is_public ?? $row->is_public,
+                        'isAauPublic' => (bool) ($institutionMeta?->is_aau_public ?? false),
+                        'carnegie' => $row->carnegie_classification,
+                        'totalFaculty' => $row->total_faculty,
+                    ];
+                })
                 ->values()
                 ->toArray();
 
@@ -594,6 +656,8 @@ class FacultyTrendController extends Controller
         return [
             'institution' => $summary->institution,
             'sector' => $summary->sector,
+            'publicPrivate' => $summary->public_private,
+            'isPublic' => $summary->is_public !== null ? (bool) $summary->is_public : null,
             'carnegie' => $summary->carnegie_classification,
             'totalFaculty' => $summary->total_faculty,
             'bubbleSize' => $this->bubbleSize($summary->total_faculty),
@@ -684,6 +748,11 @@ class FacultyTrendController extends Controller
                     'description' => 'Institutions changing in similar directions and at similar rates.',
                     'institutions' => [],
                 ],
+                'aau_publics' => [
+                    'label' => 'AAU Publics',
+                    'description' => 'Institutions marked as AAU publics through institution management and classified as public.',
+                    'institutions' => [],
+                ],
             ])->merge(collect($rankDimensions)->mapWithKeys(fn(array $dimension, string $key) => [
                 'current_' . $key => [
                     'label' => $dimension['label'] . ' Current Peers',
@@ -766,5 +835,26 @@ class FacultyTrendController extends Controller
         }
 
         return round(max(5, min(18, sqrt((float) $totalFaculty) / 3)), 1);
+    }
+
+    private function institutionMetadata(?string $unitid, ?string $institution, ?Collection $institutionMetaByUnitid = null, ?Collection $institutionMetaByName = null): ?Institution
+    {
+        if ($unitid && $institutionMetaByUnitid && $institutionMetaByUnitid->has((string) $unitid)) {
+            return $institutionMetaByUnitid->get((string) $unitid);
+        }
+
+        $nameKey = strtolower(trim((string) $institution));
+        if ($nameKey !== '' && $institutionMetaByName && $institutionMetaByName->has($nameKey)) {
+            return $institutionMetaByName->get($nameKey);
+        }
+
+        return null;
+    }
+
+    private function institutionIsAauPublic(?string $unitid, ?string $institution, ?Collection $institutionMetaByUnitid = null, ?Collection $institutionMetaByName = null): bool
+    {
+        $institutionMeta = $this->institutionMetadata($unitid, $institution, $institutionMetaByUnitid, $institutionMetaByName);
+
+        return (bool) ($institutionMeta?->is_aau_public ?? false);
     }
 }

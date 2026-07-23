@@ -320,6 +320,7 @@
                             <th>Rank</th>
                             <th>Institution</th>
                             <th>Sector</th>
+                            <th>Public/Private</th>
                             <th class="text-end">US News</th>
                             <th class="text-end" id="selectedMetricHeader">Metric</th>
                             <th class="text-end">Slope</th>
@@ -611,6 +612,9 @@ function currentSet() {
                 rank: row.usNewsRank,
                 source: 'rank_band',
                 sector: row.sector,
+                publicPrivate: row.publicPrivate,
+                isPublic: row.isPublic,
+                isAauPublic: row.isAauPublic,
                 carnegie: row.carnegie,
             }));
         return { ...set, institutions };
@@ -657,6 +661,9 @@ function comparisonRows(limit = null) {
                 customOrder: index + 1,
                 source: 'custom',
                 sector: option.sector,
+                publicPrivate: option.publicPrivate,
+                isPublic: option.isPublic,
+                isAauPublic: option.isAauPublic,
                 carnegie: option.carnegie,
                 totalFaculty: option.totalFaculty,
             };
@@ -1542,6 +1549,7 @@ function renderComparisonTable() {
         const trend = trendRow(row.institution, metric.key);
         const inst = allInstitutionMap.get(row.institution) || {};
         const usNewsRank = row.rank && currentSet().isRankBand ? row.rank : (inst.usNewsRank ?? '—');
+        const publicPrivate = row.publicPrivate ?? latest?.publicPrivate ?? inst.publicPrivate ?? '—';
         const rowClass = row.institution === peerTrendData.uconn
             ? 'comparison-row-uconn'
             : (row.institution === focus ? 'comparison-row-focus' : '');
@@ -1551,6 +1559,7 @@ function renderComparisonTable() {
                 <td class="number-tabular">${rankLabel}</td>
                 <td>${row.institution}</td>
                 <td>${row.sector ?? '—'}</td>
+                <td>${publicPrivate}</td>
                 <td class="text-end number-tabular">${usNewsRank !== null && usNewsRank !== undefined && usNewsRank !== '—' ? '#' + usNewsRank : '—'}</td>
                 <td class="text-end number-tabular">${formatValue(latest?.[metric.key], metric)}</td>
                 <td class="text-end number-tabular">${formatSlope(trend?.slope, metric)}</td>
@@ -1558,7 +1567,7 @@ function renderComparisonTable() {
         `;
     }).join('');
 
-    comparisonSetBody.innerHTML = rows || '<tr><td colspan="6" class="text-muted">No institutions available for this comparison set.</td></tr>';
+    comparisonSetBody.innerHTML = rows || '<tr><td colspan="7" class="text-muted">No institutions available for this comparison set.</td></tr>';
 }
 
 function outlookTargets(metric) {

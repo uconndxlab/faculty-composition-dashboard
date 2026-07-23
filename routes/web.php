@@ -6,6 +6,7 @@ use App\Http\Controllers\FacultyTrendController;
 use App\Http\Controllers\ScenarioController;
 use App\Http\Controllers\FacultyRosterController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\ModelingController;
 
 Route::get('/', [FacultyTrendController::class, 'index'])->name('workspace');
@@ -23,3 +24,8 @@ Route::post('/imports/trajectory-similarities', [ImportController::class, 'impor
 Route::post('/imports/forecasting', [ImportController::class, 'importForecastingOutputs']);
 Route::post('/imports/institutional-rankings', [ImportController::class, 'importInstitutionalRankings']);
 Route::post('/imports/all', [ImportController::class, 'importAll']);
+
+Route::get('/institutions', [InstitutionController::class, 'index'])->name('institutions.index');
+Route::get('/institutions/{institution}/edit', [InstitutionController::class, 'edit'])->name('institutions.edit');
+Route::put('/institutions/{institution}', [InstitutionController::class, 'update'])->name('institutions.update');
+Route::patch('/institutions/{institution}/aau-public', [InstitutionController::class, 'updateAauPublic'])->name('institutions.update-aau-public');

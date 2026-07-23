@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\FacultySummary;
 use App\Models\FacultyTrend;
 use App\Models\ForecastingOutput;
+use App\Models\Institution;
 use App\Models\InstitutionalRanking;
 use App\Models\SimilarityRanking;
 use App\Models\TrajectorySimilarity;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ImportController extends Controller
 {
@@ -42,7 +44,9 @@ class ImportController extends Controller
                 FacultySummary::class,
                 $this->csvPath('faculty_summary')
             );
-            return back()->with('status', 'Imported ' . $this->fmt($count) . ' faculty summary rows.');
+            $synced = $this->syncInstitutionsFromSummaries();
+
+            return back()->with('status', 'Imported ' . $this->fmt($count) . ' faculty summary rows and synced ' . $this->fmt($synced) . ' institutions.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Faculty Summary import failed: ' . $e->getMessage());
         }
@@ -140,8 +144,10 @@ class ImportController extends Controller
                 ['ipeds_id' => 'unitid', 'name' => 'name']
             );
 
+            $syncedInstitutions = $this->syncInstitutionsFromSummaries();
+
             $total = array_sum($counts);
-            return back()->with('status', 'Import All complete — ' . $this->fmt($total) . ' total rows imported.');
+            return back()->with('status', 'Import All complete — ' . $this->fmt($total) . ' total rows imported and ' . $this->fmt($syncedInstitutions) . ' institutions synced.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Import All failed: ' . $e->getMessage());
         }
@@ -176,8 +182,10 @@ class ImportController extends Controller
         $now  = now()->toDateTimeString();
         $count = 0;
 
-        foreach (array_chunk($rows, 500) as $chunk) {
+        foreach (array_chunk($rows, 100) as $chunk) {
             $insert = array_map(function (array $row) use ($now, $filterToFillable, $fillable): array {
+                $row = $this->normalizeComparisonPublicPrivateFields($row);
+
                 if ($filterToFillable) {
                     $row = array_intersect_key($row, array_flip($fillable));
                 }
@@ -201,7 +209,7 @@ class ImportController extends Controller
     {
         $handle = fopen($path, 'r');
 
-        $headers = fgetcsv($handle);
+        $headers = fgetcsv($handle, 0, ',', '"', '\\');
 
         // Strip UTF-8 BOM from the first header if present
         if ($headers && str_starts_with($headers[0], "\xEF\xBB\xBF")) {
@@ -212,7 +220,7 @@ class ImportController extends Controller
         $headers = array_map(fn($h) => $columnMap[$h] ?? $h, $headers);
 
         $rows = [];
-        while (($line = fgetcsv($handle)) !== false) {
+        while (($line = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
             // Skip rows that don't align with the header count
             if (count($line) !== count($headers)) {
                 continue;
@@ -226,6 +234,113 @@ class ImportController extends Controller
 
         fclose($handle);
         return $rows;
+    }
+
+    /**
+     * Keep raw sector text and also store a normalized Public/Private shape.
+     */
+    private function normalizeComparisonPublicPrivateFields(array $row): array
+    {
+        if (! array_key_exists('sector', $row)) {
+            return $row;
+        }
+
+        [$publicPrivate, $isPublic] = $this->publicPrivateFromSector($row['sector'] ?? null);
+
+        $row['public_private'] = $publicPrivate;
+        $row['is_public'] = $isPublic;
+
+        return $row;
+    }
+
+    /**
+     * @return array{0:?string,1:?bool}
+     */
+    private function publicPrivateFromSector(mixed $sector): array
+    {
+        if ($sector === null) {
+            return [null, null];
+        }
+
+        $value = strtolower(trim((string) $sector));
+
+        if ($value === '') {
+            return [null, null];
+        }
+
+        if (str_contains($value, 'public')) {
+            return ['Public', true];
+        }
+
+        if (str_contains($value, 'private')) {
+            return ['Private', false];
+        }
+
+        return [null, null];
+    }
+
+    /**
+     * Sync institution rows from latest faculty summary records.
+     * This preserves any manually curated is_aau_public values.
+     */
+    private function syncInstitutionsFromSummaries(): int
+    {
+        if (! Schema::hasTable('institutions') || ! Schema::hasTable('faculty_summaries')) {
+            return 0;
+        }
+
+        $latestRows = FacultySummary::whereNotNull('institution')
+            ->orderBy('institution')
+            ->orderByDesc('year')
+            ->get()
+            ->unique('institution')
+            ->values();
+
+        $count = 0;
+
+        foreach ($latestRows as $row) {
+            $name = trim((string) $row->institution);
+
+            if ($name === '') {
+                continue;
+            }
+
+            [$publicPrivate, $isPublic] = $this->publicPrivateFromSector($row->sector);
+            $unitid = $row->unitid ? (string) $row->unitid : null;
+
+            $existing = null;
+            if ($unitid) {
+                $existing = Institution::where('unitid', $unitid)->first();
+            }
+            if (! $existing) {
+                $existing = Institution::where('name', $name)->first();
+            }
+
+            $payload = [
+                'unitid' => $unitid,
+                'name' => $name,
+                'sector' => $row->sector,
+                'public_private' => $publicPrivate,
+                'is_public' => $isPublic,
+                'carnegie_classification' => $row->carnegie_classification,
+            ];
+
+            if ($existing) {
+                $existing->fill($payload);
+                $existing->is_uconn = $existing->is_uconn || strcasecmp($name, 'University of Connecticut') === 0;
+                $existing->save();
+                $count++;
+                continue;
+            }
+
+            Institution::create(array_merge($payload, [
+                'is_uconn' => strcasecmp($name, 'University of Connecticut') === 0,
+                'is_aau_public' => false,
+            ]));
+            $count++;
+        }
+
+        return $count;
     }
 
     /**

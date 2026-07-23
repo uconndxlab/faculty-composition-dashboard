@@ -10,6 +10,8 @@ class FacultySummary extends Model
         'unitid',
         'institution',
         'sector',
+        'public_private',
+        'is_public',
         'carnegie_classification',
         'medical_degree_flag',
         'hospital_flag',
