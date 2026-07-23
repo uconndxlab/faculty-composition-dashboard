@@ -66,13 +66,13 @@
         {{-- Mode toggle --}}
         <div class="peer-sidebar-section">
             <div class="btn-group w-100" role="group" aria-label="Workspace mode">
-                <button type="button" class="btn btn-outline-primary" id="modeProfileBtn" data-workspace-mode="profile">Profile</button>
-                <button type="button" class="btn btn-outline-primary active" id="modeCompareBtn" data-workspace-mode="compare">Compare</button>
+                <button type="button" class="btn btn-outline-primary active" id="modeProfileBtn" data-workspace-mode="profile">Profile</button>
+                <button type="button" class="btn btn-outline-primary" id="modeCompareBtn" data-workspace-mode="compare">Compare</button>
             </div>
         </div>
 
         {{-- Profile-mode controls --}}
-        <div id="profileControls" class="d-none">
+        <div id="profileControls">
             <div class="peer-sidebar-section">
                 <div class="peer-sidebar-heading">Institution</div>
                 <select id="profileInstitutionSelect" class="form-select"></select>
@@ -87,16 +87,36 @@
                 <div class="form-label mb-2">Benchmarks</div>
                 <div class="d-grid gap-2">
                     <div class="form-check">
-                        <input class="form-check-input profile-benchmark-toggle" type="checkbox" value="R1" id="profileBenchmarkR1" checked>
+                        <input class="form-check-input profile-benchmark-toggle" type="radio" name="profileBenchmark" value="R1" id="profileBenchmarkR1" checked>
                         <label class="form-check-label fw-semibold" for="profileBenchmarkR1">R1 average</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input profile-benchmark-toggle" type="checkbox" value="R2" id="profileBenchmarkR2">
+                        <input class="form-check-input profile-benchmark-toggle" type="radio" name="profileBenchmark" value="R2" id="profileBenchmarkR2">
                         <label class="form-check-label fw-semibold" for="profileBenchmarkR2">R2 average</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input profile-benchmark-toggle" type="checkbox" value="AAU_PUBLIC" id="profileBenchmarkAauPublic">
+                        <input class="form-check-input profile-benchmark-toggle" type="radio" name="profileBenchmark" value="AAU_PUBLIC" id="profileBenchmarkAauPublic">
                         <label class="form-check-label fw-semibold" for="profileBenchmarkAauPublic">AAU Public average</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input profile-benchmark-toggle" type="radio" name="profileBenchmark" value="USN_1_15" id="profileBenchmarkUsn1to15">
+                        <label class="form-check-label fw-semibold" for="profileBenchmarkUsn1to15">US News 1-15 average</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input profile-benchmark-toggle" type="radio" name="profileBenchmark" value="USN_16_30" id="profileBenchmarkUsn16to30">
+                        <label class="form-check-label fw-semibold" for="profileBenchmarkUsn16to30">US News 16-30 average</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input profile-benchmark-toggle" type="radio" name="profileBenchmark" value="USN_31_45" id="profileBenchmarkUsn31to45">
+                        <label class="form-check-label fw-semibold" for="profileBenchmarkUsn31to45">US News 31-45 average</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input profile-benchmark-toggle" type="radio" name="profileBenchmark" value="USN_46_60" id="profileBenchmarkUsn46to60">
+                        <label class="form-check-label fw-semibold" for="profileBenchmarkUsn46to60">US News 46-60 average</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input profile-benchmark-toggle" type="radio" name="profileBenchmark" value="USN_61_75" id="profileBenchmarkUsn61to75">
+                        <label class="form-check-label fw-semibold" for="profileBenchmarkUsn61to75">US News 61-75 average</label>
                     </div>
                 </div>
                 <p class="kpi-note mt-2">Share metrics use average; faculty counts use median.</p>
@@ -104,7 +124,7 @@
         </div>
 
         {{-- Compare-mode controls --}}
-        <div id="compareControls">
+        <div id="compareControls" class="d-none">
             <div class="peer-sidebar-section">
                 <div class="peer-sidebar-heading">Comparison Setup</div>
                 <p class="kpi-note">UConn is fixed. Add institutions and benchmarks to compare against it.</p>
@@ -146,15 +166,15 @@
                 <div class="form-label mb-2">Benchmarks</div>
                 <div class="d-grid gap-2">
                     <div class="form-check">
-                        <input class="form-check-input benchmark-toggle" type="checkbox" value="R1" id="benchmarkR1" checked>
+                        <input class="form-check-input benchmark-toggle" type="radio" name="compareBenchmark" value="R1" id="benchmarkR1" checked>
                         <label class="form-check-label fw-semibold" for="benchmarkR1">R1 average</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input benchmark-toggle" type="checkbox" value="R2" id="benchmarkR2">
+                        <input class="form-check-input benchmark-toggle" type="radio" name="compareBenchmark" value="R2" id="benchmarkR2">
                         <label class="form-check-label fw-semibold" for="benchmarkR2">R2 average</label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input benchmark-toggle" type="checkbox" value="AAU_PUBLIC" id="benchmarkAauPublic">
+                        <input class="form-check-input benchmark-toggle" type="radio" name="compareBenchmark" value="AAU_PUBLIC" id="benchmarkAauPublic">
                         <label class="form-check-label fw-semibold" for="benchmarkAauPublic">AAU Public average</label>
                     </div>
                 </div>
@@ -169,7 +189,7 @@
     <div class="context-main peer-main">
 
         {{-- ===== PROFILE MODE ===== --}}
-        <div id="profileContent" class="d-none">
+        <div id="profileContent">
 
             {{-- Snapshot KPI tiles --}}
             <div class="row g-3 mb-4" id="profileKpiRow">
@@ -240,7 +260,7 @@
         </div>{{-- /profileContent --}}
 
         {{-- ===== COMPARE MODE ===== --}}
-        <div id="compareContent">
+        <div id="compareContent" class="d-none">
 
         {{-- Hero chart card --}}
         <div class="card chart-panel mb-4">
@@ -266,8 +286,11 @@
                         <input id="outlookHorizon" class="form-range outlook-inline-range" type="range" min="0" max="15" step="1" value="3">
                     </div>
                     <div class="outlook-inline-control">
-                        <span class="outlook-inline-label">Overlay</span>
-                        <button type="button" class="btn btn-sm btn-outline-primary mt-1" id="compareCountsBtn">+ Counts</button>
+                        <span class="outlook-inline-label">Chart Mode</span>
+                        <div class="btn-group btn-group-sm mt-1" role="group" aria-label="Compare chart mode">
+                            <button type="button" class="btn btn-outline-primary active" id="compareSharesBtn">Shares</button>
+                            <button type="button" class="btn btn-outline-primary" id="compareCountsBtn">Counts</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -507,6 +530,11 @@ const workspaceColors = {
     R1: '#a21caf',
     R2: '#0891b2',
     AAU_PUBLIC: '#0f766e',
+    USN_1_15: '#7c3aed',
+    USN_16_30: '#2563eb',
+    USN_31_45: '#0d9488',
+    USN_46_60: '#ca8a04',
+    USN_61_75: '#dc2626',
 };
 
 // ── DOM refs ────────────────────────────────────────────────────────────────
@@ -541,7 +569,7 @@ const institutionProfiles = peerTrendData.institutionProfiles || {};
 const uconnRank = peerTrendData.uconnRank || null;
 
 // ── Workspace mode ────────────────────────────────────────────────────────
-let workspaceMode = 'compare';
+let workspaceMode = 'profile';
 const profileContent = document.getElementById('profileContent');
 const compareContent = document.getElementById('compareContent');
 const profileControls = document.getElementById('profileControls');
@@ -566,7 +594,7 @@ let profileChart;
 let currentScatterChart;
 let changeScatterChart;
 const hiddenLineSeries = new Set();
-let showCompareCounts = false;
+let compareChartMode = 'shares';
 
 const outlookBoundaryPlugin = {
     id: 'outlookBoundary',
@@ -604,6 +632,14 @@ function metrics() {
 
 function selectedMetric() {
     return metrics().find((metric) => metric.key === metricSelect.value) || metrics()[0];
+}
+
+function totalFacultyMetric() {
+    return metrics().find((metric) => metric.key === 'total_faculty') || selectedMetric();
+}
+
+function activeCompareMetric() {
+    return compareChartMode === 'counts' ? totalFacultyMetric() : selectedMetric();
 }
 
 function currentSet() {
@@ -695,9 +731,9 @@ function focusInstitution() {
 }
 
 function enabledBenchmarks() {
-    return benchmarkToggleInputs
-        .filter((input) => input.checked)
-        .map((input) => input.value);
+    const selected = benchmarkToggleInputs.find((input) => input.checked);
+
+    return selected ? [selected.value] : [];
 }
 
 function benchmarkRows(bucket, metric) {
@@ -709,12 +745,20 @@ function benchmarkHistoryDash(bucket) {
         return [2, 4];
     }
 
+    if (bucket.startsWith('USN_')) {
+        return [6, 4];
+    }
+
     return bucket === 'R2' ? [4, 4] : [14, 5];
 }
 
 function benchmarkOutlookDash(bucket) {
     if (bucket === 'AAU_PUBLIC') {
         return [1, 4];
+    }
+
+    if (bucket.startsWith('USN_')) {
+        return [2, 4, 2, 4];
     }
 
     return bucket === 'R2' ? [2, 4, 8, 4] : [8, 4, 2, 4];
@@ -932,10 +976,17 @@ function initializeControls() {
     });
     document.querySelectorAll('.profile-benchmark-toggle').forEach((i) => i.addEventListener('change', renderProfileChart));
 
-    // Profile counts overlay toggle
+    // Profile chart mode toggle
+    document.getElementById('profileSharesBtn')?.addEventListener('click', function () {
+        profileChartMode = 'shares';
+        this.classList.add('active');
+        document.getElementById('profileCountsBtn')?.classList.remove('active');
+        renderProfileChart();
+    });
     document.getElementById('profileCountsBtn')?.addEventListener('click', function () {
-        showCountsOverlay = !showCountsOverlay;
-        this.classList.toggle('active', showCountsOverlay);
+        profileChartMode = 'counts';
+        this.classList.add('active');
+        document.getElementById('profileSharesBtn')?.classList.remove('active');
         renderProfileChart();
     });
 
@@ -1218,10 +1269,10 @@ function legendHoverHandlers(getSeriesKey = (ds) => ds.seriesKey ?? ds.label) {
 }
 
 function renderLineChart() {
-    const metric = selectedMetric();
+    const metric = activeCompareMetric();
     const horizon = outlookHorizon();
     const latestYear = Number(peerTrendData.latestYear);
-    const data = { datasets: lineDatasets(metric, showCompareCounts) };
+    const data = { datasets: lineDatasets(metric, false) };
 
     const options = {
         responsive: true,
@@ -1293,8 +1344,8 @@ function renderLineChart() {
             faculty: {
                 type: 'linear',
                 position: 'right',
-                title: { display: showCompareCounts && metric.isPercentMetric, text: 'Total Faculty' },
-                display: showCompareCounts && metric.isPercentMetric,
+                title: { display: false, text: 'Total Faculty' },
+                display: false,
                 grid: { drawOnChartArea: false },
             },
         },
@@ -1527,7 +1578,7 @@ function updateStats() {
 function renderStatStrip() {
     const strip = document.getElementById('compareStatStrip');
     if (!strip) return;
-    const metric = selectedMetric();
+    const metric = activeCompareMetric();
     const focus = focusInstitution();
     const uconnTrend = trendRow(peerTrendData.uconn, metric.key);
     const focusTrend = trendRow(focus, metric.key);
@@ -1549,7 +1600,7 @@ function renderStatStrip() {
 }
 
 function renderBenchmarkSummary() {
-    const metric = selectedMetric();
+    const metric = activeCompareMetric();
     const chips = enabledBenchmarks().map((bucket) => {
         const rows = benchmarkRows(bucket, metric);
         const latest = rows[rows.length - 1];
@@ -1566,7 +1617,7 @@ function renderBenchmarkSummary() {
 }
 
 function renderComparisonTable() {
-    const metric = selectedMetric();
+    const metric = activeCompareMetric();
     const focus = focusInstitution();
     selectedMetricHeader.textContent = metric.label;
     comparisonSetDescription.textContent = isCustomMode()
@@ -1647,7 +1698,7 @@ function gapDirection(currentGap, projectedGap, metric) {
 }
 
 function renderOutlook() {
-    const metric = selectedMetric();
+    const metric = activeCompareMetric();
     const horizon = outlookHorizon();
     const targets = outlookTargets(metric);
     const uconn = targets.find((target) => target.key === peerTrendData.uconn);
@@ -1691,11 +1742,11 @@ function renderWorkspace() {
     renderOutlook();
     renderOutcomesPanel();
     const titleEl = document.getElementById('chartTitleMetric');
-    if (titleEl) titleEl.textContent = selectedMetric().label + ' Over Time';
+    if (titleEl) titleEl.textContent = activeCompareMetric().label + ' Over Time';
 }
 
 // ── Profile mode ─────────────────────────────────────────────────────────
-let showCountsOverlay = false;
+let profileChartMode = 'shares';
 const profileData = peerTrendData.profileSeries || { labels: [], shares: [], counts: [], points: [] };
 const latestByYear = peerTrendData.latestByYear || {};
 const allYears = peerTrendData.allYears || [];
@@ -1720,9 +1771,10 @@ function profileHorizon() {
 }
 
 function enabledProfileBenchmarks() {
-    return [...document.querySelectorAll('.profile-benchmark-toggle')]
-        .filter((i) => i.checked)
-        .map((i) => i.value);
+    const selected = [...document.querySelectorAll('.profile-benchmark-toggle')]
+        .find((i) => i.checked);
+
+    return selected ? [selected.value] : [];
 }
 
 function renderProfileKpis() {
@@ -1777,8 +1829,8 @@ function renderProfileChart() {
 
     // Always show shares (percent) series; optionally overlay count series
     const shareSeries = (profileData['shares'] || []).filter((d) => d.yAxis === 'percent');
-    const countSeries = showCountsOverlay ? (profileData['counts'] || []).filter((d) => d.yAxis === 'faculty') : [];
-    const seriesDefs = [...shareSeries, ...countSeries];
+    const countSeries = (profileData['counts'] || []).filter((d) => d.yAxis === 'faculty');
+    const seriesDefs = profileChartMode === 'counts' ? countSeries : shareSeries;
 
     const datasets = seriesDefs.map((def) => {
         const data = rows.map((r) => ({ x: r.year, y: r[def.key] ?? null })).filter((d) => d.y !== null);
@@ -1821,8 +1873,9 @@ function renderProfileChart() {
             const validRows = rows.filter((r) => r.value !== null && r.value !== undefined).map((r) => ({ year: Number(r.year), value: Number(r.value) }));
             const latest = validRows[validRows.length - 1];
             const bSlope = validRows.length >= 2 ? linearSlope(validRows) : null;
+            const benchmark = peerTrendData.benchmarks?.[bucket] || { label: `${bucket} average` };
             const historyBase = {
-                label: `${bucket} avg (${def.label})`,
+                label: `${benchmark.label || `${bucket} average`} (${def.label})`,
                 data: validRows.map((r) => ({ x: r.year, y: r.value })),
                 borderColor: color,
                 backgroundColor: color,
@@ -1842,7 +1895,7 @@ function renderProfileChart() {
                 for (let i = 1; i <= horizon; i++) outlookData.push({ x: latest.year + i, y: latest.value + bSlope * i });
                 datasets.push({
                     ...historyBase,
-                    label: `${bucket} avg (${def.label}) outlook`,
+                    label: `${benchmark.label || `${bucket} average`} (${def.label}) outlook`,
                     data: outlookData,
                     borderDash: outlookDash,
                     borderWidth: 1.5,
@@ -1888,8 +1941,8 @@ function renderProfileChart() {
         },
         scales: {
             x: { type: 'linear', title: { display: true, text: 'Year' }, ticks: { precision: 0, callback: (v) => String(Math.trunc(v)) } },
-            percent: { type: 'linear', position: 'left', title: { display: true, text: 'Share of Total Faculty' }, ticks: { callback: (v) => v + '%' }, display: true },
-            faculty: { type: 'linear', position: 'right', title: { display: showCountsOverlay, text: 'Faculty Count' }, display: showCountsOverlay, grid: { drawOnChartArea: false } },
+            percent: { type: 'linear', position: 'left', title: { display: profileChartMode === 'shares', text: 'Share of Total Faculty' }, ticks: { callback: (v) => v + '%' }, display: profileChartMode === 'shares' },
+            faculty: { type: 'linear', position: 'left', title: { display: profileChartMode === 'counts', text: 'Faculty Count' }, display: profileChartMode === 'counts', grid: { drawOnChartArea: false } },
         },
     };
 
@@ -1923,7 +1976,7 @@ function renderProfileChart() {
 
     // Hide total faculty legend swatch when counts overlay is off
     const tfLegend = document.getElementById('profileTotalFacultyLegend');
-    if (tfLegend) tfLegend.classList.toggle('d-none', !showCountsOverlay);
+    if (tfLegend) tfLegend.classList.toggle('d-none', profileChartMode !== 'counts');
 }
 
 function renderProfileI3() {
@@ -2045,22 +2098,19 @@ if (metrics().length > 0) {
         });
     });
     customFocusSelect.addEventListener('change', renderWorkspace);
-    benchmarkToggleInputs.forEach((input) => input.addEventListener('change', () => {
-        if (input.checked) {
-            benchmarkToggleInputs.forEach((otherInput) => {
-                if (otherInput !== input) {
-                    otherInput.checked = false;
-                }
-            });
-        }
-
-        renderWorkspace();
-    }));
+    benchmarkToggleInputs.forEach((input) => input.addEventListener('change', renderWorkspace));
     outlookHorizonSelect.addEventListener('change', renderWorkspace);
 
+    document.getElementById('compareSharesBtn')?.addEventListener('click', function () {
+        compareChartMode = 'shares';
+        this.classList.add('active');
+        document.getElementById('compareCountsBtn')?.classList.remove('active');
+        renderWorkspace();
+    });
     document.getElementById('compareCountsBtn')?.addEventListener('click', function () {
-        showCompareCounts = !showCompareCounts;
-        this.classList.toggle('active', showCompareCounts);
+        compareChartMode = 'counts';
+        this.classList.add('active');
+        document.getElementById('compareSharesBtn')?.classList.remove('active');
         renderWorkspace();
     });
 

@@ -512,6 +512,7 @@ class FacultyTrendController extends Controller
             ->get();
 
         [$aauUnitids, $aauNames] = $this->aauPublicInstitutionLookup();
+        $usNewsBandLookups = $this->usNewsBenchmarkLookups();
 
         $bucketRows = [
             'R1' => $summaries
@@ -528,10 +529,23 @@ class FacultyTrendController extends Controller
                 ->sortKeys(),
         ];
 
+        foreach ($this->usNewsBenchmarkBands() as $bucket => $definition) {
+            $lookup = $usNewsBandLookups[$bucket] ?? ['unitids' => collect(), 'names' => collect()];
+            $bucketRows[$bucket] = $summaries
+                ->filter(fn(FacultySummary $summary) => $this->summaryMatchesLookup($summary, $lookup['unitids'], $lookup['names']))
+                ->groupBy('year')
+                ->sortKeys();
+        }
+
         return collect([
             'R1' => 'R1 average',
             'R2' => 'R2 average',
             'AAU_PUBLIC' => 'AAU Public average',
+            'USN_1_15' => 'US News 1-15 average',
+            'USN_16_30' => 'US News 16-30 average',
+            'USN_31_45' => 'US News 31-45 average',
+            'USN_46_60' => 'US News 46-60 average',
+            'USN_61_75' => 'US News 61-75 average',
         ])->mapWithKeys(function (string $label, string $bucket) use ($bucketRows) {
                 $rowsForBucket = $bucketRows[$bucket] ?? collect();
 
@@ -604,16 +618,93 @@ class FacultyTrendController extends Controller
         return [$unitids, $names];
     }
 
+    /**
+     * @return array<string, array{label:string,min:int,max:int}>
+     */
+    private function usNewsBenchmarkBands(): array
+    {
+        return [
+            'USN_1_15' => ['label' => 'US News 1-15 average', 'min' => 1, 'max' => 15],
+            'USN_16_30' => ['label' => 'US News 16-30 average', 'min' => 16, 'max' => 30],
+            'USN_31_45' => ['label' => 'US News 31-45 average', 'min' => 31, 'max' => 45],
+            'USN_46_60' => ['label' => 'US News 46-60 average', 'min' => 46, 'max' => 60],
+            'USN_61_75' => ['label' => 'US News 61-75 average', 'min' => 61, 'max' => 75],
+        ];
+    }
+
+    /**
+     * @return array<string, array{unitids:Collection<int, string>, names:Collection<int, string>}>
+     */
+    private function usNewsBenchmarkLookups(): array
+    {
+        $bands = collect($this->usNewsBenchmarkBands())
+            ->mapWithKeys(fn(array $definition, string $bucket) => [$bucket => ['unitids' => collect(), 'names' => collect()]])
+            ->toArray();
+
+        if (! Schema::hasTable('institutional_rankings')) {
+            return $bands;
+        }
+
+        $rankings = InstitutionalRanking::query()
+            ->whereNotNull('top_public_rank_nat_univ')
+            ->whereBetween('top_public_rank_nat_univ', [1, 75])
+            ->get(['unitid', 'name', 'top_public_rank_nat_univ']);
+
+        foreach ($rankings as $ranking) {
+            $bucket = $this->usNewsBenchmarkBucket($ranking->top_public_rank_nat_univ !== null ? (int) $ranking->top_public_rank_nat_univ : null);
+
+            if (! $bucket) {
+                continue;
+            }
+
+            if ($ranking->unitid) {
+                $bands[$bucket]['unitids']->push((string) $ranking->unitid);
+            }
+
+            if ($ranking->name) {
+                $bands[$bucket]['names']->push(strtolower(trim((string) $ranking->name)));
+            }
+        }
+
+        foreach (array_keys($bands) as $bucket) {
+            $bands[$bucket]['unitids'] = $bands[$bucket]['unitids']->unique()->values();
+            $bands[$bucket]['names'] = $bands[$bucket]['names']->unique()->values();
+        }
+
+        return $bands;
+    }
+
     private function isAauPublicSummary(FacultySummary $summary, Collection $aauUnitids, Collection $aauNames): bool
     {
+        return $this->summaryMatchesLookup($summary, $aauUnitids, $aauNames);
+    }
+
+    private function summaryMatchesLookup(FacultySummary $summary, Collection $unitids, Collection $names): bool
+    {
         $unitid = $summary->unitid ? (string) $summary->unitid : null;
-        if ($unitid && $aauUnitids->contains($unitid)) {
+        if ($unitid && $unitids->contains($unitid)) {
             return true;
         }
 
         $name = strtolower(trim((string) $summary->institution));
 
-        return $name !== '' && $aauNames->contains($name);
+        return $name !== '' && $names->contains($name);
+    }
+
+    private function usNewsBenchmarkBucket(?int $rank): ?string
+    {
+        if ($rank === null) {
+            return null;
+        }
+
+        return match (true) {
+            $rank >= 1 && $rank <= 15 => 'USN_1_15',
+            $rank >= 16 && $rank <= 30 => 'USN_16_30',
+            $rank >= 31 && $rank <= 45 => 'USN_31_45',
+            $rank >= 46 && $rank <= 60 => 'USN_46_60',
+            $rank >= 61 && $rank <= 75 => 'USN_61_75',
+            default => null,
+        };
     }
 
     private function benchmarkBucket(?string $carnegieClassification): ?string
@@ -826,6 +917,11 @@ class FacultyTrendController extends Controller
                 'R1' => ['label' => 'R1 average', 'series' => []],
                 'R2' => ['label' => 'R2 average', 'series' => []],
                 'AAU_PUBLIC' => ['label' => 'AAU Public average', 'series' => []],
+                'USN_1_15' => ['label' => 'US News 1-15 average', 'series' => []],
+                'USN_16_30' => ['label' => 'US News 16-30 average', 'series' => []],
+                'USN_31_45' => ['label' => 'US News 31-45 average', 'series' => []],
+                'USN_46_60' => ['label' => 'US News 46-60 average', 'series' => []],
+                'USN_61_75' => ['label' => 'US News 61-75 average', 'series' => []],
             ],
             'series' => [],
             'latest' => [],
