@@ -264,6 +264,18 @@ class FacultyTrendController extends Controller
                 ->keyBy(fn(Institution $institution) => strtolower(trim((string) $institution->name)));
         }
 
+        $similarityMetaByUnitid = collect();
+        $similarityMetaByName = collect();
+        if (Schema::hasTable('similarity_rankings')) {
+            $similarityMeta = SimilarityRanking::all();
+            $similarityMetaByUnitid = $similarityMeta
+                ->filter(fn(SimilarityRanking $ranking) => ! empty($ranking->unitid))
+                ->keyBy(fn(SimilarityRanking $ranking) => (string) $ranking->unitid);
+            $similarityMetaByName = $similarityMeta
+                ->filter(fn(SimilarityRanking $ranking) => ! empty($ranking->institution))
+                ->keyBy(fn(SimilarityRanking $ranking) => strtolower(trim((string) $ranking->institution)));
+        }
+
         $ranksByUnitid = Schema::hasTable('institutional_rankings')
             ? InstitutionalRanking::whereNotNull('unitid')->pluck('top_public_rank_nat_univ', 'unitid')
             : collect();
@@ -298,7 +310,7 @@ class FacultyTrendController extends Controller
             ->orderByDesc('year')
             ->get()
             ->unique('institution')
-            ->map(fn(FacultySummary $row) => $this->institutionOptionForWorkspace($row, $ranksByUnitid, $institutionMetaByUnitid, $institutionMetaByName))
+            ->map(fn(FacultySummary $row) => $this->institutionOptionForWorkspace($row, $ranksByUnitid, $institutionMetaByUnitid, $institutionMetaByName, $similarityMetaByUnitid, $similarityMetaByName))
             ->values();
 
         $aauPublicSetRows = $allInstitutions
@@ -485,10 +497,13 @@ class FacultyTrendController extends Controller
         FacultySummary $summary,
         ?Collection $ranksByUnitid = null,
         ?Collection $institutionMetaByUnitid = null,
-        ?Collection $institutionMetaByName = null
+        ?Collection $institutionMetaByName = null,
+        ?Collection $similarityMetaByUnitid = null,
+        ?Collection $similarityMetaByName = null
     ): array
     {
         $institutionMeta = $this->institutionMetadata($summary->unitid, $summary->institution, $institutionMetaByUnitid, $institutionMetaByName);
+        $similarityMeta = $this->similarityMetadata($summary->unitid, $summary->institution, $similarityMetaByUnitid, $similarityMetaByName);
         $publicPrivate = $institutionMeta?->public_private ?? $summary->public_private;
         $isPublic = $institutionMeta?->is_public;
         if ($isPublic === null) {
@@ -502,11 +517,29 @@ class FacultyTrendController extends Controller
             'publicPrivate' => $publicPrivate,
             'isPublic' => $isPublic !== null ? (bool) $isPublic : null,
             'isAauPublic' => (bool) ($institutionMeta?->is_aau_public ?? false),
+            'researchActivityClass' => $institutionMeta?->research_activity_class ?? $summary->research_activity_class,
             'carnegie' => $summary->carnegie_classification,
             'totalFaculty' => $summary->total_faculty,
             'latestYear' => $summary->year,
             'usNewsRank' => $ranksByUnitid && $summary->unitid ? ($ranksByUnitid->get((string) $summary->unitid) ?? null) : null,
+            'fullProfileDistance' => $similarityMeta?->detailed_cell_euclidean_distance !== null
+                ? round((float) $similarityMeta->detailed_cell_euclidean_distance, 4)
+                : null,
         ];
+    }
+
+    private function similarityMetadata(?string $unitid, ?string $institution, ?Collection $similarityMetaByUnitid = null, ?Collection $similarityMetaByName = null): ?SimilarityRanking
+    {
+        if ($unitid && $similarityMetaByUnitid && $similarityMetaByUnitid->has((string) $unitid)) {
+            return $similarityMetaByUnitid->get((string) $unitid);
+        }
+
+        $nameKey = strtolower(trim((string) $institution));
+        if ($nameKey !== '' && $similarityMetaByName && $similarityMetaByName->has($nameKey)) {
+            return $similarityMetaByName->get($nameKey);
+        }
+
+        return null;
     }
 
     private function benchmarkSeries(): array
@@ -747,6 +780,9 @@ class FacultyTrendController extends Controller
                     return [
                         'institution' => $row->institution,
                         'rank' => $row->{$dimension['column']},
+                        'distance' => $row->detailed_cell_euclidean_distance !== null
+                            ? round((float) $row->detailed_cell_euclidean_distance, 4)
+                            : null,
                         'source' => 'current',
                         'sector' => $row->sector,
                         'publicPrivate' => $institutionMeta?->public_private ?? $row->public_private,

@@ -257,6 +257,8 @@
                 <div class="card-footer d-flex flex-wrap gap-3 align-items-center py-2" id="profileSlopeStrip"></div>
             </div>
 
+            <div id="profileDistanceMatrix"></div>
+
         </div>{{-- /profileContent --}}
 
         {{-- ===== COMPARE MODE ===== --}}
@@ -353,6 +355,7 @@
                             <th>Sector</th>
                             <th>Public/Private</th>
                             <th class="text-end">US News</th>
+                            <th class="text-end">Distance</th>
                             <th class="text-end" id="selectedMetricHeader">Metric</th>
                             <th class="text-end">Slope</th>
                         </tr>
@@ -704,6 +707,7 @@ function comparisonRows(limit = null) {
                 institution,
                 rank: 'Custom',
                 customOrder: index + 1,
+                distance: null,
                 source: 'custom',
                 sector: option.sector,
                 publicPrivate: option.publicPrivate,
@@ -1021,7 +1025,9 @@ function initializeControls() {
         scatterYSelect.value = 'outcome_grad_rate';
     }
 
-    const setOptions = Object.entries(peerTrendData.sets || {}).map(([key, set]) => ({ value: key, label: set.label }));
+    const setOptions = Object.entries(peerTrendData.sets || {})
+        .filter(([key]) => key !== 'aau_publics')
+        .map(([key, set]) => ({ value: key, label: set.label }));
     fillSelect(setSelect, setOptions, peerTrendData.defaultSet);
     updatePeerOptions();
     initializeCustomOptions();
@@ -1629,6 +1635,7 @@ function renderComparisonTable() {
         const trend = trendRow(row.institution, metric.key);
         const inst = allInstitutionMap.get(row.institution) || {};
         const usNewsRank = row.rank && currentSet().isRankBand ? row.rank : (inst.usNewsRank ?? '—');
+        const distance = row.distance !== null && row.distance !== undefined ? Number(row.distance).toFixed(4) : '—';
         const publicPrivate = row.publicPrivate ?? latest?.publicPrivate ?? inst.publicPrivate ?? '—';
         const rowClass = row.institution === peerTrendData.uconn
             ? 'comparison-row-uconn'
@@ -1641,13 +1648,14 @@ function renderComparisonTable() {
                 <td>${row.sector ?? '—'}</td>
                 <td>${publicPrivate}</td>
                 <td class="text-end number-tabular">${usNewsRank !== null && usNewsRank !== undefined && usNewsRank !== '—' ? '#' + usNewsRank : '—'}</td>
+                <td class="text-end number-tabular">${distance}</td>
                 <td class="text-end number-tabular">${formatValue(latest?.[metric.key], metric)}</td>
                 <td class="text-end number-tabular">${formatSlope(trend?.slope, metric)}</td>
             </tr>
         `;
     }).join('');
 
-    comparisonSetBody.innerHTML = rows || '<tr><td colspan="7" class="text-muted">No institutions available for this comparison set.</td></tr>';
+    comparisonSetBody.innerHTML = rows || '<tr><td colspan="8" class="text-muted">No institutions available for this comparison set.</td></tr>';
 }
 
 function outlookTargets(metric) {
@@ -2007,14 +2015,92 @@ function renderProfileI3() {
     const fmtPct = (v) => v !== null && v !== undefined ? Number(v).toFixed(1) + '%' : '—';
     const fmtSal = (v) => v !== null && v !== undefined ? '$' + Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '—';
     const fmtSfr = (v) => v !== null && v !== undefined ? Number(v).toFixed(1) : '—';
+
     body.innerHTML = `
-        <div class="outcome-stat-strip">
-            <div class="outcome-stat"><div class="outcome-stat-label">6-Yr Grad Rate</div><div class="outcome-stat-value">${fmtPct(profile.grad_rate)}</div></div>
-            <div class="outcome-stat"><div class="outcome-stat-label">Pell Grad Rate</div><div class="outcome-stat-value">${fmtPct(profile.grad_rate_pell)}</div></div>
-            <div class="outcome-stat"><div class="outcome-stat-label">1st-Yr Retention</div><div class="outcome-stat-value">${fmtPct(profile.retention_rate)}</div></div>
-            <div class="outcome-stat"><div class="outcome-stat-label">Acceptance Rate</div><div class="outcome-stat-value">${fmtPct(profile.acceptance_rate)}</div></div>
-            <div class="outcome-stat"><div class="outcome-stat-label">Avg Faculty Salary</div><div class="outcome-stat-value">${fmtSal(profile.avg_faculty_salary)}</div></div>
-            <div class="outcome-stat"><div class="outcome-stat-label">Student / Faculty</div><div class="outcome-stat-value">${fmtSfr(profile.student_faculty_ratio)}</div></div>
+        <div class="card-body">
+            <div class="outcome-stat-strip">
+                <div class="outcome-stat"><div class="outcome-stat-label">6-Yr Grad Rate</div><div class="outcome-stat-value">${fmtPct(profile.grad_rate)}</div></div>
+                <div class="outcome-stat"><div class="outcome-stat-label">Pell Grad Rate</div><div class="outcome-stat-value">${fmtPct(profile.grad_rate_pell)}</div></div>
+                <div class="outcome-stat"><div class="outcome-stat-label">1st-Yr Retention</div><div class="outcome-stat-value">${fmtPct(profile.retention_rate)}</div></div>
+                <div class="outcome-stat"><div class="outcome-stat-label">Acceptance Rate</div><div class="outcome-stat-value">${fmtPct(profile.acceptance_rate)}</div></div>
+                <div class="outcome-stat"><div class="outcome-stat-label">Avg Faculty Salary</div><div class="outcome-stat-value">${fmtSal(profile.avg_faculty_salary)}</div></div>
+                <div class="outcome-stat"><div class="outcome-stat-label">Student / Faculty</div><div class="outcome-stat-value">${fmtSfr(profile.student_faculty_ratio)}</div></div>
+            </div>
+        </div>`;
+}
+
+function renderProfileDistanceMatrix() {
+    const container = document.getElementById('profileDistanceMatrix');
+    if (!container) return;
+
+    const inst = profileInstitution();
+    if (inst !== peerTrendData.uconn) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const rankedSetColumns = Object.entries(peerTrendData.sets || {})
+        .filter(([key, set]) => key !== 'aau_publics' && key !== 'rank_band' && Array.isArray(set.institutions))
+        .map(([key, set]) => ({ key, label: set.label }));
+
+    if (rankedSetColumns.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const benchmarkRows = [
+        { label: 'R1 Average', matches: (row) => row?.researchActivityClass === 'R1' },
+        { label: 'R2 Average', matches: (row) => row?.researchActivityClass === 'R2' },
+        { label: 'AAU Public Average', matches: (row) => row?.isAauPublic === true && row?.publicPrivate === 'Public' },
+        { label: 'US News 1-15 Average', matches: (row) => row?.usNewsRank !== null && row?.usNewsRank >= 1 && row?.usNewsRank <= 15 },
+        { label: 'US News 16-30 Average', matches: (row) => row?.usNewsRank !== null && row?.usNewsRank >= 16 && row?.usNewsRank <= 30 },
+        { label: 'US News 31-45 Average', matches: (row) => row?.usNewsRank !== null && row?.usNewsRank >= 31 && row?.usNewsRank <= 45 },
+        { label: 'US News 46-60 Average', matches: (row) => row?.usNewsRank !== null && row?.usNewsRank >= 46 && row?.usNewsRank <= 60 },
+        { label: 'US News 61-75 Average', matches: (row) => row?.usNewsRank !== null && row?.usNewsRank >= 61 && row?.usNewsRank <= 75 },
+    ];
+
+    const fmtDist = (v) => v !== null && v !== undefined ? Number(v).toFixed(4) : '—';
+    const header = rankedSetColumns
+        .map((column) => `<th class="text-end">${escapeHtml(column.label)}</th>`)
+        .join('');
+
+    const rows = benchmarkRows.map((benchmark) => {
+        const cells = rankedSetColumns.map((column) => {
+            const institutions = (peerTrendData.sets?.[column.key]?.institutions || [])
+                .map((entry) => allInstitutionMap.get(entry.institution) || null)
+                .filter((row) => row && row.institution !== peerTrendData.uconn && benchmark.matches(row));
+
+            const values = institutions
+                .map((row) => row.fullProfileDistance)
+                .filter((value) => value !== null && value !== undefined)
+                .map((value) => Number(value));
+
+            const avg = values.length > 0
+                ? values.reduce((sum, value) => sum + value, 0) / values.length
+                : null;
+
+            return `<td class="text-end number-tabular">${fmtDist(avg)}</td>`;
+        }).join('');
+
+        return `<tr><th>${escapeHtml(benchmark.label)}</th>${cells}</tr>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="card mb-4">
+            <div class="card-header card-header-brand">
+                <div class="fw-semibold">Average Full-Profile Distance from UConn</div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th>Benchmark</th>
+                            ${header}
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
         </div>`;
 }
 
@@ -2022,6 +2108,7 @@ function renderProfileMode() {
     renderProfileKpis();
     renderProfileChart();
     renderProfileI3();
+    renderProfileDistanceMatrix();
     const inst = profileInstitution();
     const titleEl = document.getElementById('profileChartTitle');
     if (titleEl) titleEl.textContent = `${inst} — Faculty Composition Over Time`;
