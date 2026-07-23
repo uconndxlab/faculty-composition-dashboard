@@ -99,7 +99,7 @@
                 <p class="page-subtitle">Explore how hiring, replacement, and enrollment assumptions affect future faculty composition.</p>
             </div>
 
-            <div class="peer-sidebar-section">
+            <div class="peer-sidebar-section d-none">
                 <div class="peer-sidebar-heading">Starting Points</div>
                 <div class="d-grid gap-2">
                     @foreach($presets as $preset)
