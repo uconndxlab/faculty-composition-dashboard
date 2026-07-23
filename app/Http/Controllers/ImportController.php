@@ -9,6 +9,7 @@ use App\Models\Institution;
 use App\Models\InstitutionalRanking;
 use App\Models\SimilarityRanking;
 use App\Models\TrajectorySimilarity;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -37,86 +38,98 @@ class ImportController extends Controller
         return view('imports.index', compact('counts'));
     }
 
-    public function importFacultySummary()
+    public function importFacultySummary(Request $request)
     {
         try {
+            ['path' => $path, 'sourceLabel' => $sourceLabel] = $this->resolveImportSource($request, 'faculty_summary_file', 'faculty_summary');
+
             $count = $this->importRows(
                 FacultySummary::class,
-                $this->csvPath('faculty_summary')
+                $path
             );
             $synced = $this->syncInstitutionsFromSummaries();
 
-            return back()->with('status', 'Imported ' . $this->fmt($count) . ' faculty summary rows and synced ' . $this->fmt($synced) . ' institutions.');
+            return back()->with('status', 'Imported ' . $this->fmt($count) . ' faculty summary rows from ' . $sourceLabel . ' and synced ' . $this->fmt($synced) . ' institutions.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Faculty Summary import failed: ' . $e->getMessage());
         }
     }
 
-    public function importFacultyTrends()
+    public function importFacultyTrends(Request $request)
     {
         try {
+            ['path' => $path, 'sourceLabel' => $sourceLabel] = $this->resolveImportSource($request, 'faculty_trends_file', 'faculty_trends');
+
             $count = $this->importRows(
                 FacultyTrend::class,
-                $this->csvPath('faculty_trends')
+                $path
             );
-            return back()->with('status', 'Imported ' . $this->fmt($count) . ' faculty trend rows.');
+            return back()->with('status', 'Imported ' . $this->fmt($count) . ' faculty trend rows from ' . $sourceLabel . '.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Faculty Trends import failed: ' . $e->getMessage());
         }
     }
 
-    public function importSimilarityRankings()
+    public function importSimilarityRankings(Request $request)
     {
         try {
+            ['path' => $path, 'sourceLabel' => $sourceLabel] = $this->resolveImportSource($request, 'similarity_rankings_file', 'similarity_ranks');
+
             $count = $this->importRows(
                 SimilarityRanking::class,
-                $this->csvPath('similarity_ranks'),
+                $path,
                 [
                     '9d_similarity_rank' => 'nine_d_similarity_rank',
                     '9d_rank_pct'        => 'nine_d_rank_pct',
                 ]
             );
-            return back()->with('status', 'Imported ' . $this->fmt($count) . ' similarity ranking rows.');
+            return back()->with('status', 'Imported ' . $this->fmt($count) . ' similarity ranking rows from ' . $sourceLabel . '.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Similarity Rankings import failed: ' . $e->getMessage());
         }
     }
 
-    public function importTrajectorySimilarities()
+    public function importTrajectorySimilarities(Request $request)
     {
         try {
+            ['path' => $path, 'sourceLabel' => $sourceLabel] = $this->resolveImportSource($request, 'trajectory_similarities_file', 'trajectory_similarity');
+
             $count = $this->importRows(
                 TrajectorySimilarity::class,
-                $this->csvPath('trajectory_similarity')
+                $path
             );
-            return back()->with('status', 'Imported ' . $this->fmt($count) . ' trajectory similarity rows.');
+            return back()->with('status', 'Imported ' . $this->fmt($count) . ' trajectory similarity rows from ' . $sourceLabel . '.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Trajectory Similarity import failed: ' . $e->getMessage());
         }
     }
 
-    public function importForecastingOutputs()
+    public function importForecastingOutputs(Request $request)
     {
         try {
+            ['path' => $path, 'sourceLabel' => $sourceLabel] = $this->resolveImportSource($request, 'forecasting_file', 'forecasting');
+
             $count = $this->importRows(
                 ForecastingOutput::class,
-                $this->csvPath('forecasting')
+                $path
             );
-            return back()->with('status', 'Imported ' . $this->fmt($count) . ' forecasting rows.');
+            return back()->with('status', 'Imported ' . $this->fmt($count) . ' forecasting rows from ' . $sourceLabel . '.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Forecasting import failed: ' . $e->getMessage());
         }
     }
 
-    public function importInstitutionalRankings()
+    public function importInstitutionalRankings(Request $request)
     {
         try {
+            ['path' => $path, 'sourceLabel' => $sourceLabel] = $this->resolveImportSource($request, 'institutional_rankings_file', 'institutional_rankings');
+
             $count = $this->importRows(
                 InstitutionalRanking::class,
-                $this->csvPath('institutional_rankings'),
+                $path,
                 ['ipeds_id' => 'unitid', 'name' => 'name']
             );
-            return back()->with('status', 'Imported ' . $this->fmt($count) . ' institutional ranking rows.');
+            return back()->with('status', 'Imported ' . $this->fmt($count) . ' institutional ranking rows from ' . $sourceLabel . '.');
         } catch (\Throwable $e) {
             return back()->with('error', 'Institutional Rankings import failed: ' . $e->getMessage());
         }
@@ -158,6 +171,42 @@ class ImportController extends Controller
     private function csvPath(string $key): string
     {
         return database_path('data/' . self::FILES[$key]);
+    }
+
+    /**
+     * Resolve an import source from optional upload or local default file.
+     *
+     * @return array{path:string,sourceLabel:string}
+     */
+    private function resolveImportSource(Request $request, string $inputKey, string $datasetKey): array
+    {
+        $request->validate([
+            $inputKey => ['nullable', 'file', 'mimes:csv,txt', 'max:10240'],
+        ]);
+
+        if (! $request->hasFile($inputKey)) {
+            return [
+                'path' => $this->csvPath($datasetKey),
+                'sourceLabel' => 'local file',
+            ];
+        }
+
+        $file = $request->file($inputKey);
+
+        if (! $file || ! $file->isValid()) {
+            throw new \RuntimeException('Uploaded file is invalid.');
+        }
+
+        $path = $file->getRealPath();
+
+        if (! $path || ! is_readable($path)) {
+            throw new \RuntimeException('Uploaded file could not be read.');
+        }
+
+        return [
+            'path' => $path,
+            'sourceLabel' => 'uploaded file',
+        ];
     }
 
     /**
@@ -241,16 +290,39 @@ class ImportController extends Controller
      */
     private function normalizeComparisonPublicPrivateFields(array $row): array
     {
-        if (! array_key_exists('sector', $row)) {
-            return $row;
+        if (array_key_exists('sector', $row)) {
+            [$publicPrivate, $isPublic] = $this->publicPrivateFromSector($row['sector'] ?? null);
+
+            $row['public_private'] = $publicPrivate;
+            $row['is_public'] = $isPublic;
         }
 
-        [$publicPrivate, $isPublic] = $this->publicPrivateFromSector($row['sector'] ?? null);
-
-        $row['public_private'] = $publicPrivate;
-        $row['is_public'] = $isPublic;
+        $row['research_activity_class'] = $this->normalizeResearchActivityClass($row['research_activity_class'] ?? null);
 
         return $row;
+    }
+
+    private function normalizeResearchActivityClass(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = strtoupper(trim((string) $value));
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (preg_match('/^R1\b/', $normalized) === 1) {
+            return 'R1';
+        }
+
+        if (preg_match('/^R2\b/', $normalized) === 1) {
+            return 'R2';
+        }
+
+        return null;
     }
 
     /**
@@ -322,6 +394,7 @@ class ImportController extends Controller
                 'sector' => $row->sector,
                 'public_private' => $publicPrivate,
                 'is_public' => $isPublic,
+                'research_activity_class' => $this->normalizeResearchActivityClass($row->research_activity_class),
                 'carnegie_classification' => $row->carnegie_classification,
             ];
 

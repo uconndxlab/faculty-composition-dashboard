@@ -12,6 +12,7 @@ class TrajectorySimilarity extends Model
         'sector',
         'public_private',
         'is_public',
+        'research_activity_class',
         'carnegie_classification',
         'medical_degree_flag',
         'hospital_flag',

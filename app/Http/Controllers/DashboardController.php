@@ -212,12 +212,12 @@ class DashboardController extends Controller
 
     private function buildBenchmarkChartData($labels): array
     {
-        $rows = FacultySummary::whereNotNull('carnegie_classification')
+        $rows = FacultySummary::whereNotNull('research_activity_class')
             ->whereNotNull('year')
             ->orderBy('year')
             ->get()
             ->map(function (FacultySummary $summary) {
-                $bucket = $this->benchmarkBucket($summary->carnegie_classification);
+                $bucket = $this->benchmarkBucket($summary->research_activity_class);
 
                 return $bucket ? ['bucket' => $bucket, 'summary' => $summary] : null;
             })
@@ -281,17 +281,21 @@ class DashboardController extends Controller
         ];
     }
 
-    private function benchmarkBucket(?string $carnegieClassification): ?string
+    private function benchmarkBucket(?string $researchActivityClass): ?string
     {
-        if ($carnegieClassification === null) {
+        if ($researchActivityClass === null) {
             return null;
         }
 
-        $classification = trim($carnegieClassification);
+        $classification = strtoupper(trim($researchActivityClass));
+
+        if ($classification === '') {
+            return null;
+        }
 
         return match (true) {
-            preg_match('/^Mixed Undergraduate\/Graduate(?:-Doctorate)? Large$/i', $classification) === 1 => 'R1',
-            preg_match('/^Mixed Undergraduate\/Graduate(?:-Doctorate)? Medium$/i', $classification) === 1 => 'R2',
+            preg_match('/^R1\b/', $classification) === 1 => 'R1',
+            preg_match('/^R2\b/', $classification) === 1 => 'R2',
             default => null,
         };
     }

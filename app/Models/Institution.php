@@ -13,6 +13,7 @@ class Institution extends Model
         'sector',
         'public_private',
         'is_public',
+        'research_activity_class',
         'carnegie_classification',
         'is_uconn',
         'is_aau_public',

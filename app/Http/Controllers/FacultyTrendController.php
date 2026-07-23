@@ -516,11 +516,11 @@ class FacultyTrendController extends Controller
 
         $bucketRows = [
             'R1' => $summaries
-                ->filter(fn(FacultySummary $summary) => $this->benchmarkBucket($summary->carnegie_classification) === 'R1')
+                ->filter(fn(FacultySummary $summary) => $this->benchmarkBucket($summary->research_activity_class) === 'R1')
                 ->groupBy('year')
                 ->sortKeys(),
             'R2' => $summaries
-                ->filter(fn(FacultySummary $summary) => $this->benchmarkBucket($summary->carnegie_classification) === 'R2')
+                ->filter(fn(FacultySummary $summary) => $this->benchmarkBucket($summary->research_activity_class) === 'R2')
                 ->groupBy('year')
                 ->sortKeys(),
             'AAU_PUBLIC' => $summaries
@@ -707,17 +707,21 @@ class FacultyTrendController extends Controller
         };
     }
 
-    private function benchmarkBucket(?string $carnegieClassification): ?string
+    private function benchmarkBucket(?string $researchActivityClass): ?string
     {
-        if ($carnegieClassification === null) {
+        if ($researchActivityClass === null) {
             return null;
         }
 
-        $classification = trim($carnegieClassification);
+        $classification = strtoupper(trim($researchActivityClass));
+
+        if ($classification === '') {
+            return null;
+        }
 
         return match (true) {
-            preg_match('/^Mixed Undergraduate\/Graduate(?:-Doctorate)? Large$/i', $classification) === 1 => 'R1',
-            preg_match('/^Mixed Undergraduate\/Graduate(?:-Doctorate)? Medium$/i', $classification) === 1 => 'R2',
+            preg_match('/^R1\b/', $classification) === 1 => 'R1',
+            preg_match('/^R2\b/', $classification) === 1 => 'R2',
             default => null,
         };
     }
