@@ -86,156 +86,133 @@
     $interpretationText = 'Under this scenario, ' . $tenurePhrase . ' while ' . $nttPhrase . '. ' . $ratioPhrase;
 @endphp
 
-<div class="mb-3">
-    <h1 class="h3 mb-1">Modeling</h1>
-    <p class="text-muted mb-1">Explore how different hiring, replacement, and enrollment assumptions affect future faculty composition.</p>
-</div>
+<div class="context-workspace peer-workspace modeling-workspace">
+    <aside class="context-sidebar peer-sidebar modeling-sidebar" aria-label="Modeling controls">
+        <button class="sidebar-collapse-toggle context-sidebar-toggle" type="button" data-context-sidebar-toggle aria-label="Collapse modeling controls">
+            ‹
+        </button>
+        <div class="context-sidebar-rail-label">Modeling</div>
+        <div class="context-sidebar-content">
+            <div class="context-sidebar-header">
+                <div class="page-kicker">Scenario Explorer</div>
+                <h1 class="page-title">Modeling</h1>
+                <p class="page-subtitle">Explore how hiring, replacement, and enrollment assumptions affect future faculty composition.</p>
+            </div>
 
-<div class="d-none flex-wrap align-items-center gap-2 mb-3">
-    <span class="small text-muted">Starting points:</span>
-    @foreach($presets as $preset)
-        @php
-            $active = $isPresetActive($preset['params']);
-        @endphp
-        <a
-            href="{{ route('modeling.index', $preset['params']) }}"
-            class="btn btn-sm {{ $active ? 'btn-primary' : 'btn-outline-secondary' }}"
-        >
-            {{ $preset['label'] }}
-        </a>
-    @endforeach
-</div>
+            <div class="peer-sidebar-section">
+                <div class="peer-sidebar-heading">Starting Points</div>
+                <div class="d-grid gap-2">
+                    @foreach($presets as $preset)
+                        @php
+                            $active = $isPresetActive($preset['params']);
+                        @endphp
+                        <a
+                            href="{{ route('modeling.index', $preset['params']) }}"
+                            class="btn btn-sm {{ $active ? 'btn-primary' : 'btn-outline-secondary' }}"
+                        >
+                            {{ $preset['label'] }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
 
-<form method="GET" action="{{ route('modeling.index') }}" class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-white border-0 pt-3 pb-1">
-        <h2 class="h5 mb-0">Scenario assumptions</h2>
-    </div>
-    <div class="card-body pt-2">
-        <div class="py-3 border-bottom">
-            <div class="row g-3 align-items-center">
-                <div class="col-lg-4">
-                    <div class="fw-semibold">Hiring pattern</div>
-                    <div class="text-muted small">Determines whether new tenure-system hires follow historical or recent rank mix.</div>
-                    <div class="small mt-1 text-muted">This affects the Assistant / Associate / Full distribution, not the other assumptions.</div>
-                </div>
-                <div class="col-lg-2">
-                    <div class="small text-muted">Selected</div>
-                    <div class="fw-semibold">{{ $selectedMain['hiring_model'] === 'historical' ? 'Historical hiring mix' : 'Recent hiring mix' }}</div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="btn-group flex-wrap" role="group" aria-label="Hiring pattern options">
-                        @foreach($controlChoices['hiring_model'] as $choice)
-                            @php
-                                $optionLabel = $choice['value'] === 'historical' ? 'Historical hiring mix' : 'Recent hiring mix';
-                            @endphp
-                            <input
-                                class="btn-check"
-                                type="radio"
-                                name="hiring_model"
-                                id="hiring_model_{{ $loop->index }}"
-                                value="{{ $choice['value'] }}"
-                                {{ $selectedMain['hiring_model'] === $choice['value'] ? 'checked' : '' }}
-                            >
-                            <label class="btn btn-outline-secondary btn-sm" for="hiring_model_{{ $loop->index }}">{{ $optionLabel }}</label>
-                        @endforeach
-                    </div>
-                </div>
+            <form method="GET" action="{{ route('modeling.index') }}" class="peer-sidebar-section">
+                <div class="peer-sidebar-heading mb-2">Scenario Assumptions</div>
+        <div class="py-3 border-bottom modeling-control-block">
+            <div class="fw-semibold">Hiring pattern</div>
+            <div class="text-muted small">Determines whether new tenure-system hires follow historical or recent rank mix.</div>
+            <div class="small mt-1 text-muted">This affects the Assistant / Associate / Full distribution, not the other assumptions.</div>
+            <div class="small text-muted mt-2">Selected</div>
+            <div class="fw-semibold mb-2">{{ $selectedMain['hiring_model'] === 'historical' ? 'Historical hiring mix' : 'Recent hiring mix' }}</div>
+            <div class="d-flex flex-wrap gap-2" role="group" aria-label="Hiring pattern options">
+                @foreach($controlChoices['hiring_model'] as $choice)
+                    @php
+                        $optionLabel = $choice['value'] === 'historical' ? 'Historical hiring mix' : 'Recent hiring mix';
+                    @endphp
+                    <input
+                        class="btn-check"
+                        type="radio"
+                        name="hiring_model"
+                        id="hiring_model_{{ $loop->index }}"
+                        value="{{ $choice['value'] }}"
+                        {{ $selectedMain['hiring_model'] === $choice['value'] ? 'checked' : '' }}
+                    >
+                    <label class="btn btn-outline-secondary btn-sm modeling-option-btn" for="hiring_model_{{ $loop->index }}">{{ $optionLabel }}</label>
+                @endforeach
             </div>
         </div>
 
-        <div class="py-3 border-bottom">
-            <div class="row g-3 align-items-center">
-                <div class="col-lg-4">
-                    <div class="fw-semibold">Where do tenure-system exits go?</div>
-                    <div class="text-muted small">Choose how much tenure-system loss is absorbed through NTT capacity instead of tenure-system replacement hiring.</div>
-                </div>
-                <div class="col-lg-2">
-                    <div class="small text-muted">Selected</div>
-                    <div class="fw-semibold">{{ (int) round(((float) $selectedMain['ntt_replacement_probability']) * 100) }}% NTT</div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="btn-group flex-wrap" role="group" aria-label="Where exits go options">
-                        @foreach($controlChoices['ntt_replacement_probability'] as $choice)
-                            <input
-                                class="btn-check"
-                                type="radio"
-                                name="ntt_replacement_probability"
-                                id="ntt_replacement_probability_{{ $loop->index }}"
-                                value="{{ $choice['value'] }}"
-                                {{ abs((float) $selectedMain['ntt_replacement_probability'] - (float) $choice['value']) < 1e-9 ? 'checked' : '' }}
-                            >
-                            <label class="btn btn-outline-secondary btn-sm" for="ntt_replacement_probability_{{ $loop->index }}">{{ $choice['label'] }} NTT</label>
-                        @endforeach
-                    </div>
-                </div>
+        <div class="py-3 border-bottom modeling-control-block">
+            <div class="fw-semibold">Where do tenure-system exits go?</div>
+            <div class="text-muted small">Choose how much tenure-system loss is absorbed through NTT capacity instead of tenure-system replacement hiring.</div>
+            <div class="small text-muted mt-2">Selected</div>
+            <div class="fw-semibold mb-2">{{ (int) round(((float) $selectedMain['ntt_replacement_probability']) * 100) }}% NTT</div>
+            <div class="d-flex flex-wrap gap-2" role="group" aria-label="Where exits go options">
+                @foreach($controlChoices['ntt_replacement_probability'] as $choice)
+                    <input
+                        class="btn-check"
+                        type="radio"
+                        name="ntt_replacement_probability"
+                        id="ntt_replacement_probability_{{ $loop->index }}"
+                        value="{{ $choice['value'] }}"
+                        {{ abs((float) $selectedMain['ntt_replacement_probability'] - (float) $choice['value']) < 1e-9 ? 'checked' : '' }}
+                    >
+                    <label class="btn btn-outline-secondary btn-sm modeling-option-btn" for="ntt_replacement_probability_{{ $loop->index }}">{{ $choice['label'] }} NTT</label>
+                @endforeach
             </div>
         </div>
 
-        <div class="py-3 border-bottom">
-            <div class="row g-3 align-items-center">
-                <div class="col-lg-4">
-                    <div class="fw-semibold">NTT added per shifted exit</div>
-                    <div class="text-muted small">For exits routed to NTT capacity, choose how much NTT FTE is added.</div>
-                    <div class="small mt-1 text-muted">This only matters when some exits are routed to NTT capacity.</div>
-                </div>
-                <div class="col-lg-2">
-                    <div class="small text-muted">Selected</div>
-                    <div class="fw-semibold">{{ rtrim(rtrim(number_format((float) $selectedMain['ntt_per_tenure_exit'], 2), '0'), '.') }}</div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="btn-group flex-wrap" role="group" aria-label="NTT added per shifted exit options">
-                        @foreach($controlChoices['ntt_per_tenure_exit'] as $choice)
-                            <input
-                                class="btn-check"
-                                type="radio"
-                                name="ntt_per_tenure_exit"
-                                id="ntt_per_tenure_exit_{{ $loop->index }}"
-                                value="{{ $choice['value'] }}"
-                                {{ abs((float) $selectedMain['ntt_per_tenure_exit'] - (float) $choice['value']) < 1e-9 ? 'checked' : '' }}
-                            >
-                            <label class="btn btn-outline-secondary btn-sm" for="ntt_per_tenure_exit_{{ $loop->index }}">{{ $choice['label'] }}</label>
-                        @endforeach
-                    </div>
-                </div>
+        <div class="py-3 border-bottom modeling-control-block">
+            <div class="fw-semibold">NTT added per shifted exit</div>
+            <div class="text-muted small">For exits routed to NTT capacity, choose how much NTT FTE is added.</div>
+            <div class="small mt-1 text-muted">This only matters when some exits are routed to NTT capacity.</div>
+            <div class="small text-muted mt-2">Selected</div>
+            <div class="fw-semibold mb-2">{{ rtrim(rtrim(number_format((float) $selectedMain['ntt_per_tenure_exit'], 2), '0'), '.') }}</div>
+            <div class="d-flex flex-wrap gap-2" role="group" aria-label="NTT added per shifted exit options">
+                @foreach($controlChoices['ntt_per_tenure_exit'] as $choice)
+                    <input
+                        class="btn-check"
+                        type="radio"
+                        name="ntt_per_tenure_exit"
+                        id="ntt_per_tenure_exit_{{ $loop->index }}"
+                        value="{{ $choice['value'] }}"
+                        {{ abs((float) $selectedMain['ntt_per_tenure_exit'] - (float) $choice['value']) < 1e-9 ? 'checked' : '' }}
+                    >
+                    <label class="btn btn-outline-secondary btn-sm modeling-option-btn" for="ntt_per_tenure_exit_{{ $loop->index }}">{{ $choice['label'] }}</label>
+                @endforeach
             </div>
         </div>
 
-        <div class="py-3 pb-2">
-            <div class="row g-3 align-items-center">
-                <div class="col-lg-4">
-                    <div class="fw-semibold">Student growth</div>
-                    <div class="text-muted small">Annual change in modeled student FTE.</div>
-                </div>
-                <div class="col-lg-2">
-                    <div class="small text-muted">Selected</div>
-                    <div class="fw-semibold">{{ $selectedGrowthLabel }}</div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="btn-group flex-wrap" role="group" aria-label="Student growth options">
-                        @foreach($controlChoices['student_growth_rate'] as $choice)
-                            <input
-                                class="btn-check"
-                                type="radio"
-                                name="student_growth_rate"
-                                id="student_growth_rate_{{ $loop->index }}"
-                                value="{{ $choice['value'] }}"
-                                {{ abs((float) $selectedMain['student_growth_rate'] - (float) $choice['value']) < 1e-9 ? 'checked' : '' }}
-                            >
-                            <label class="btn btn-outline-secondary btn-sm" for="student_growth_rate_{{ $loop->index }}">{{ $choice['label'] }}</label>
-                        @endforeach
-                    </div>
-                </div>
+        <div class="py-3 pb-2 modeling-control-block">
+            <div class="fw-semibold">Student growth</div>
+            <div class="text-muted small">Annual change in modeled student FTE.</div>
+            <div class="small text-muted mt-2">Selected</div>
+            <div class="fw-semibold mb-2">{{ $selectedGrowthLabel }}</div>
+            <div class="d-flex flex-wrap gap-2" role="group" aria-label="Student growth options">
+                @foreach($controlChoices['student_growth_rate'] as $choice)
+                    <input
+                        class="btn-check"
+                        type="radio"
+                        name="student_growth_rate"
+                        id="student_growth_rate_{{ $loop->index }}"
+                        value="{{ $choice['value'] }}"
+                        {{ abs((float) $selectedMain['student_growth_rate'] - (float) $choice['value']) < 1e-9 ? 'checked' : '' }}
+                    >
+                    <label class="btn btn-outline-secondary btn-sm modeling-option-btn" for="student_growth_rate_{{ $loop->index }}">{{ $choice['label'] }}</label>
+                @endforeach
             </div>
         </div>
 
         <div class="small text-muted mt-2">{{ $scenarioSentence }}</div>
-    </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Apply scenario</button>
+                    <a href="{{ route('modeling.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+                </div>
+            </form>
+        </div>
+    </aside>
 
-    <div class="card-footer bg-white border-0 pt-0 pb-3">
-        <button type="submit" class="btn btn-primary btn-sm">Apply scenario</button>
-        <a href="{{ route('modeling.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
-    </div>
-</form>
+    <div class="context-main peer-main modeling-main">
 
 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-3 mb-4">
     @foreach($outcomeCards as $card)
@@ -461,6 +438,9 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
     </div>
 </div>
 @endsection

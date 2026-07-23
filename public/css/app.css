@@ -795,6 +795,27 @@ body.app-sidebar-collapsed .page-frame {
     grid-template-columns: minmax(17rem, 20rem) minmax(0, 1fr);
 }
 
+.modeling-workspace {
+    grid-template-columns: minmax(17rem, 21rem) minmax(0, 1fr);
+}
+
+.modeling-sidebar .modeling-option-btn {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 8.5rem;
+    text-align: center;
+}
+
+.modeling-sidebar .modeling-control-block .fw-semibold {
+    line-height: 1.3;
+}
+
+@media (max-width: 1280px) {
+    .modeling-sidebar .modeling-option-btn {
+        flex-basis: 100%;
+        min-width: 0;
+    }
+}
+
 .metric-definition {
     background: var(--surface-secondary);
     border: 1px solid var(--border-subtle);
